@@ -1,44 +1,89 @@
-import fetch from "node-fetch";
 import OpenAI from "openai";
+import { config } from "dotenv";
 
-const useOpenAI = process.env.USE_OPENAI === "true";
+config({ path: "./config.env" });
 
-// OpenAI client
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
-export async function generateScript(topic: string, tone: string, length: string): Promise<string> {
-  const prompt = `Write a ${length} storytelling script in a ${tone} tone about: ${topic}`;
+// Generate story outline
+async function generateOutline(prompt: string, targetWords: number, targetChapters: number) {
+  const wordsPerChapter = Math.floor(targetWords / targetChapters);
 
-  if (useOpenAI) {
-    // ---- OpenAI branch ----
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are a professional scriptwriter." },
-        { role: "user", content: prompt }
-      ]
-    });
+  const outlinePrompt = `
+  You are a professional storyteller.
+  Create a detailed outline for a ${targetWords}-word story about:
 
-    return response.choices[0].message?.content || "No response from OpenAI.";
-  } else {
-    // ---- Ollama branch ----
-    const res = await fetch("http://localhost:11434/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "llama3",
-        prompt,
-        stream: false
-      }),
-    });
+  "${prompt}"
 
-    if (!res.ok) {
-      throw new Error(`Ollama request failed: ${res.statusText}`);
+  Divide it into ${targetChapters} chapters.
+  For each chapter, include:
+  - Title
+  - Key events
+  - Characters involved
+  - Word target (about ${wordsPerChapter} words)
+  `;
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-5",
+    messages: [{ role: "user", content: outlinePrompt }],
+  });
+
+  return response.choices[0].message.content;
+}
+
+// Stream a chapter
+async function* streamChapter(
+  outline: string,
+  chapterNumber: number,
+  totalChapters: number,
+  wordsPerChapter: number
+) {
+  const chapterPrompt = `
+  You are writing Chapter ${chapterNumber} of a ${totalChapters}-chapter story.
+
+  Follow this outline:
+  ${outline}
+
+  Rules:
+  - Write about ${wordsPerChapter} words.
+  - Keep characters, plot, and setting consistent with the outline.
+  - Make it engaging, descriptive, and suitable for spoken storytelling (YouTube narration).
+  - End with a transition that leads naturally into the next chapter (unless it’s the final chapter).
+  - Do NOT summarize. Write full detailed narrative.
+  `;
+
+  const stream = await openai.chat.completions.create({
+    model: "gpt-5",
+    messages: [{ role: "user", content: chapterPrompt }],
+    stream: true, // 🚨 Enable streaming
+  });
+
+  for await (const chunk of stream) {
+    const token = chunk.choices[0]?.delta?.content || "";
+    if (token) {
+      yield token; // send each token to frontend
     }
+  }
+}
 
-    const data = await res.json();
-    return data.response || "No response from Ollama.";
+// Main function: stream the full story chapter by chapter
+export async function* streamFullStory(
+  prompt: string,
+  targetWords: number,
+  targetChapters: number
+) {
+  // Step 1: Create outline (non-streamed for now)
+  const outline: any = await generateOutline(prompt, targetWords, targetChapters);
+
+  // Step 2: Stream chapters
+  const wordsPerChapter = Math.floor(targetWords / targetChapters);
+
+  for (let i = 1; i <= targetChapters; i++) {
+    yield `\n\n--- Chapter ${i} ---\n\n`; // notify frontend a new chapter starts
+    for await (const token of streamChapter(outline, i, targetChapters, wordsPerChapter)) {
+      yield token;
+    }
   }
 }

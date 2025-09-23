@@ -1,8 +1,15 @@
-import { Router } from "express";
-import { generateStory } from "../Controllers/storyController";
+import express from "express";
+import { generateStoryStream, getStories, getStoryById } from "../Controllers/storyController";
 
-const router = Router();
+const router = express.Router();
 
-router.post("/generate", generateStory);
+// Stream & save a story
+router.post("/generate/stream", generateStoryStream);
+
+// Get all stories
+router.get("/", getStories);
+
+// Get one story by ID
+router.get("/:id", getStoryById);
 
 export default router;

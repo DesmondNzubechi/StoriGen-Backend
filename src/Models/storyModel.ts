@@ -1,21 +1,22 @@
-import mongoose, { Schema, Document } from "mongoose";
+import { Schema, model, Document } from "mongoose";
 
 export interface IStory extends Document {
-  user: mongoose.Types.ObjectId;
-  title: string;
-  summary: string;
-  content: string;
+  prompt: string;
+  targetWords: number;
+  targetChapters: number;
+  content: string; // full story text
   createdAt: Date;
+  updatedAt: Date;
 }
 
 const storySchema = new Schema<IStory>(
   {
-    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    title: { type: String, required: true },
-    summary: { type: String, required: true },
+    prompt: { type: String, required: true },
+    targetWords: { type: Number, required: true },
+    targetChapters: { type: Number, required: true },
     content: { type: String, required: true },
   },
   { timestamps: true }
 );
 
-export default mongoose.model<IStory>("Story", storySchema);
+export default model<IStory>("Story", storySchema);
