@@ -8,86 +8,192 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __asyncValues = (this && this.__asyncValues) || function (o) {
-    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
-    var m = o[Symbol.asyncIterator], i;
-    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
-    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
-    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getStoryById = exports.getStories = exports.generateStoryStream = void 0;
-const storyModel_1 = __importDefault(require("../Models/storyModel"));
+exports.getStoryById = exports.getStories = exports.generateStoryThumbnail = exports.generateStoryTitles = exports.generateStoryDescription = exports.generateChapterImagePrompts = exports.generateStoryChapter = exports.initStory = void 0;
+const storyModel_1 = require("../Models/storyModel");
 const aiService_1 = require("../Services/aiService");
-const generateStoryStream = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, e_1, _b, _c;
-    const { prompt, targetWords, targetChapters } = req.body;
-    if (!prompt || !targetWords || !targetChapters) {
-        return res.status(400).json({ error: "Missing required fields" });
-    }
-    // Setup streaming headers
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-    let storyContent = "";
+// ==========================
+// INIT STORY
+// ==========================
+const initStory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
-        try {
-            for (var _d = true, _e = __asyncValues((0, aiService_1.streamFullStory)(prompt, targetWords, targetChapters)), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
-                _c = _f.value;
-                _d = false;
-                const chunk = _c;
-                storyContent += chunk; // collect story to save later
-                res.write(chunk); // stream live to client
-            }
+        const { prompt, targetWords, targetChapters } = req.body;
+        if (!prompt || !targetWords || !targetChapters) {
+            return res.status(400).json({ message: "Missing required fields" });
         }
-        catch (e_1_1) { e_1 = { error: e_1_1 }; }
-        finally {
-            try {
-                if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
-            }
-            finally { if (e_1) throw e_1.error; }
-        }
-        // Save to MongoDB after streaming is complete
-        const story = new storyModel_1.default({
+        // Generate outline
+        const outline = yield (0, aiService_1.generateOutline)(prompt, targetWords, targetChapters);
+        // Create new story doc
+        const story = yield storyModel_1.Story.create({
+            user: (_a = req.user) === null || _a === void 0 ? void 0 : _a._id,
             prompt,
             targetWords,
             targetChapters,
-            content: storyContent.trim(),
+            outline,
+            chapters: [],
+            youtubeAssets: {},
+            status: "in_progress",
         });
-        yield story.save();
-        res.end();
+        res.status(201).json(story);
     }
     catch (error) {
-        console.error(error);
-        res.write(`Error: ${error.message}`);
-        res.end();
+        res.status(500).json({ message: "Error initializing story", error: error.message });
     }
 });
-exports.generateStoryStream = generateStoryStream;
-// Fetch all stories
-const getStories = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.initStory = initStory;
+// ==========================
+// GENERATE CHAPTER
+// ==========================
+const generateStoryChapter = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const stories = yield storyModel_1.default.find().sort({ createdAt: -1 });
+        const { storyId } = req.params;
+        const { chapterNumber } = req.body;
+        const story = yield storyModel_1.Story.findById(storyId);
+        if (!story)
+            return res.status(404).json({ message: "Story not found" });
+        if (chapterNumber > story.targetChapters) {
+            return res.status(400).json({ message: "Chapter number exceeds targetChapters" });
+        }
+        const chapterText = yield (0, aiService_1.generateChapter)(story.outline || "", chapterNumber, story.targetChapters, story.targetWords);
+        // Split chapter into paragraphs
+        const paragraphs = chapterText
+            .split("\n\n")
+            .map((p) => p.trim())
+            .filter(Boolean)
+            .map((p) => ({ text: p }));
+        const newChapter = {
+            number: chapterNumber,
+            title: `Chapter ${chapterNumber}`,
+            text: chapterText,
+            paragraphs,
+        };
+        story.chapters.push(newChapter);
+        yield story.save();
+        res.json(newChapter);
+    }
+    catch (error) {
+        res.status(500).json({ message: "Error generating chapter", error: error.message });
+    }
+});
+exports.generateStoryChapter = generateStoryChapter;
+// ==========================
+// GENERATE IMAGE PROMPTS (PER PARAGRAPH)
+// ==========================
+const generateChapterImagePrompts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { storyId, chapterNumber } = req.params;
+        const story = yield storyModel_1.Story.findById(storyId);
+        if (!story)
+            return res.status(404).json({ message: "Story not found" });
+        const chapter = story.chapters.find((c) => c.number === Number(chapterNumber));
+        if (!chapter)
+            return res.status(404).json({ message: "Chapter not found" });
+        // Generate image prompts for each paragraph
+        for (let i = 0; i < chapter.paragraphs.length; i++) {
+            const imagePrompt = yield (0, aiService_1.generateImagePrompts)(chapter.paragraphs[i].text, story.prompt);
+            chapter.paragraphs[i].imagePrompt = imagePrompt;
+        }
+        yield story.save();
+        res.json(chapter.paragraphs);
+    }
+    catch (error) {
+        res.status(500).json({ message: "Error generating image prompts", error: error.message });
+    }
+});
+exports.generateChapterImagePrompts = generateChapterImagePrompts;
+// ==========================
+// GENERATE DESCRIPTION
+// ==========================
+const generateStoryDescription = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { storyId } = req.params;
+        const story = yield storyModel_1.Story.findById(storyId);
+        if (!story)
+            return res.status(404).json({ message: "Story not found" });
+        const fullStory = story.chapters.map((c) => c.text).join("\n\n");
+        const description = yield (0, aiService_1.generateDescription)(fullStory);
+        story.youtubeAssets.description = description;
+        yield story.save();
+        res.json({ description });
+    }
+    catch (error) {
+        res.status(500).json({ message: "Error generating description", error: error.message });
+    }
+});
+exports.generateStoryDescription = generateStoryDescription;
+// ==========================
+// GENERATE TITLES
+// ==========================
+const generateStoryTitles = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { storyId } = req.params;
+        const story = yield storyModel_1.Story.findById(storyId);
+        if (!story)
+            return res.status(404).json({ message: "Story not found" });
+        const fullStory = story.chapters.map((c) => c.text).join("\n\n");
+        const titlesRaw = yield (0, aiService_1.generateTitles)(fullStory);
+        const titles = titlesRaw
+            .split(/\n|\r|\r\n/g)
+            .map((t) => t.replace(/^[-*\d\.\)\s]+/, "").trim())
+            .filter(Boolean);
+        story.youtubeAssets.titles = titles;
+        yield story.save();
+        res.json({ titles });
+    }
+    catch (error) {
+        res.status(500).json({ message: "Error generating titles", error: error.message });
+    }
+});
+exports.generateStoryTitles = generateStoryTitles;
+// ==========================
+// GENERATE THUMBNAIL PROMPT
+// ==========================
+const generateStoryThumbnail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { storyId } = req.params;
+        const story = yield storyModel_1.Story.findById(storyId);
+        if (!story)
+            return res.status(404).json({ message: "Story not found" });
+        const fullStory = story.chapters.map((c) => c.text).join("\n\n");
+        const thumbnailPrompt = yield (0, aiService_1.generateThumbnailPrompt)(fullStory);
+        story.youtubeAssets.thumbnailPrompt = thumbnailPrompt;
+        // Final update → assets_complete
+        story.status = "assets_complete";
+        yield story.save();
+        res.json({ thumbnailPrompt });
+    }
+    catch (error) {
+        res.status(500).json({ message: "Error generating thumbnail prompt", error: error.message });
+    }
+});
+exports.generateStoryThumbnail = generateStoryThumbnail;
+// ==========================
+// FETCH STORIES
+// ==========================
+const getStories = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _b;
+    try {
+        const stories = yield storyModel_1.Story.find({ user: (_b = req.user) === null || _b === void 0 ? void 0 : _b._id }).sort({ createdAt: -1 });
         res.json(stories);
     }
     catch (error) {
-        res.status(500).json({ error: "Failed to fetch stories" });
+        res.status(500).json({ message: "Error fetching stories", error: error.message });
     }
 });
 exports.getStories = getStories;
-// Fetch single story by ID
+// ==========================
+// FETCH ONE STORY
+// ==========================
 const getStoryById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const story = yield storyModel_1.default.findById(req.params.id);
+        const story = yield storyModel_1.Story.findById(req.params.id);
         if (!story)
-            return res.status(404).json({ error: "Story not found" });
+            return res.status(404).json({ message: "Story not found" });
         res.json(story);
     }
     catch (error) {
-        res.status(500).json({ error: "Failed to fetch story" });
+        res.status(500).json({ message: "Error fetching story", error: error.message });
     }
 });
 exports.getStoryById = getStoryById;

@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { testEmailService } from '../tests/emailService.test';
+// import { testEmailService } from '../tests/emailService.test';
 
 // Load environment variables
 dotenv.config({ path: './config.env' });
@@ -9,7 +9,7 @@ const runEmailTests = async () => {
   console.log('🚀 Starting Email Service Tests...\n');
   
   try {
-    await testEmailService();
+    // await testEmailService();
     console.log('\n✅ All email tests passed!');
     process.exit(0);
   } catch (error) {

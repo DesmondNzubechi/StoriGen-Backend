@@ -1,6 +1,6 @@
 import mongoose, { Date, ObjectId } from "mongoose";
 import { Request } from 'express';
-import { IUser } from '../interfaces/user.interface';
+import { IUser } from '../Models/userModel';
 
 export interface userType {
   fullName: string;

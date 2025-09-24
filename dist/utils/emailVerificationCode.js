@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generatEmailVerificationCode = void 0;
-const userModel_1 = __importDefault(require("../models/userModel"));
+const userModel_1 = __importDefault(require("../Models/userModel"));
 const generatEmailVerificationCode = () => __awaiter(void 0, void 0, void 0, function* () {
     let isCodeUnique = false;
     let emailVerificationCode;

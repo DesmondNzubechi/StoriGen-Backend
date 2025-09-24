@@ -6,8 +6,11 @@ import {
   generateStoryDescription,
   generateStoryTitles,
   generateStoryThumbnail,
-  getStories,
+  getUserStories,
   getStoryById,
+  getUserStoryStats,
+  searchUserStories,
+  getStoriesByStatus,
 } from "../Controllers/storyController";
 import { protectedRoute as protect } from "../Controllers/authController";
 
@@ -272,20 +275,73 @@ router.post("/:storyId/metadata/thumbnail", protect, generateStoryThumbnail);
  * @swagger
  * /api/story:
  *   get:
- *     summary: Get all user stories
+ *     summary: Get user stories with pagination and filtering
  *     tags: [Stories]
  *     security:
  *       - bearerAuth: []
  *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of stories per page
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [in_progress, chapters_complete, assets_complete]
+ *         description: Filter by story status
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search in story prompt and chapter titles
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           default: createdAt
+ *         description: Field to sort by
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *         description: Sort order
  *     responses:
  *       200:
  *         description: Stories retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Story'
+ *               type: object
+ *               properties:
+ *                 stories:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Story'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     currentPage:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *                     totalStories:
+ *                       type: integer
+ *                     hasNextPage:
+ *                       type: boolean
+ *                     hasPrevPage:
+ *                       type: boolean
  *       401:
  *         description: Not authenticated
  *         content:
@@ -293,7 +349,7 @@ router.post("/:storyId/metadata/thumbnail", protect, generateStoryThumbnail);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get("/", protect, getStories);
+router.get("/", protect, getUserStories);
 
 /**
  * @swagger
@@ -332,5 +388,191 @@ router.get("/", protect, getStories);
  *               $ref: '#/components/schemas/Error'
  */
 router.get("/:id", protect, getStoryById);
+
+/**
+ * @swagger
+ * /api/story/stats:
+ *   get:
+ *     summary: Get user story statistics
+ *     tags: [Stories]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Story statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalStories:
+ *                   type: integer
+ *                   description: Total number of stories
+ *                 totalWords:
+ *                   type: integer
+ *                   description: Total words across all stories
+ *                 totalChapters:
+ *                   type: integer
+ *                   description: Total chapters across all stories
+ *                 completedStories:
+ *                   type: integer
+ *                   description: Number of completed stories
+ *                 inProgressStories:
+ *                   type: integer
+ *                   description: Number of in-progress stories
+ *                 chaptersCompleteStories:
+ *                   type: integer
+ *                   description: Number of stories with chapters complete
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get("/stats", protect, getUserStoryStats);
+
+/**
+ * @swagger
+ * /api/story/search:
+ *   get:
+ *     summary: Search user stories
+ *     tags: [Stories]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *         description: Search query
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [in_progress, chapters_complete, assets_complete]
+ *         description: Filter by status
+ *       - in: query
+ *         name: dateFrom
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter stories from this date
+ *       - in: query
+ *         name: dateTo
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter stories to this date
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           default: createdAt
+ *         description: Field to sort by
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *         description: Sort order
+ *     responses:
+ *       200:
+ *         description: Search results retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 stories:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Story'
+ *                 totalResults:
+ *                   type: integer
+ *                 searchQuery:
+ *                   type: string
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get("/search", protect, searchUserStories);
+
+/**
+ * @swagger
+ * /api/story/status/{status}:
+ *   get:
+ *     summary: Get stories by status
+ *     tags: [Stories]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: status
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [in_progress, chapters_complete, assets_complete]
+ *         description: Story status
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of stories per page
+ *     responses:
+ *       200:
+ *         description: Stories retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 stories:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Story'
+ *                 status:
+ *                   type: string
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     currentPage:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *                     totalStories:
+ *                       type: integer
+ *                     hasNextPage:
+ *                       type: boolean
+ *                     hasPrevPage:
+ *                       type: boolean
+ *       400:
+ *         description: Invalid status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get("/status/:status", protect, getStoriesByStatus);
 
 export default router;

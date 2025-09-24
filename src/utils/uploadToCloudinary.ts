@@ -35,7 +35,7 @@ export const uploadFileToCloudinary = async (
           public_id: `${folder}_${Date.now()}`,
           format: format,
         },
-        (error, result) => {
+        (error: any, result: UploadApiResponse | undefined) => {
           if (error) reject(error);
           else if (result) resolve(result);
           else reject(new Error("Upload failed with undefined result"));

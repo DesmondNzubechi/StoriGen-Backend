@@ -99,7 +99,7 @@ export const uploadImagesToCloudinary = async (
               { quality: "auto" }, // Optimize quality
             ],
           },
-          (error, result) => {
+          (error: any, result: UploadApiResponse | undefined) => {
             if (error) {
               console.error("Cloudinary upload error:", error);
               reject(error);

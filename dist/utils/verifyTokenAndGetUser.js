@@ -16,7 +16,7 @@ exports.verifyTokenAndGetUser = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const dotenv_1 = require("dotenv");
 const appError_1 = require("../errors/appError");
-const userModel_1 = __importDefault(require("../models/userModel"));
+const userModel_1 = __importDefault(require("../Models/userModel"));
 (0, dotenv_1.config)({ path: "./config.env" });
 const { JWT_SECRET } = process.env;
 if (!JWT_SECRET) {

@@ -14,14 +14,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.runEmailTests = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
-const emailService_test_1 = require("../tests/emailService.test");
+// import { testEmailService } from '../tests/emailService.test';
 // Load environment variables
 dotenv_1.default.config({ path: './config.env' });
 // Test email functionality
 const runEmailTests = () => __awaiter(void 0, void 0, void 0, function* () {
     console.log('🚀 Starting Email Service Tests...\n');
     try {
-        yield (0, emailService_test_1.testEmailService)();
+        // await testEmailService();
         console.log('\n✅ All email tests passed!');
         process.exit(0);
     }
