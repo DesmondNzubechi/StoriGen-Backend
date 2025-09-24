@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getStoryById = exports.getStories = exports.generateStoryThumbnail = exports.generateStoryTitles = exports.generateStoryDescription = exports.generateChapterImagePrompts = exports.generateStoryChapter = exports.initStory = void 0;
+exports.getStoriesByStatus = exports.searchUserStories = exports.getUserStoryStats = exports.getStoryById = exports.getUserStories = exports.generateStoryThumbnail = exports.generateStoryTitles = exports.generateStoryDescription = exports.generateChapterImagePrompts = exports.generateStoryChapter = exports.initStory = void 0;
 const storyModel_1 = require("../Models/storyModel");
 const aiService_1 = require("../Services/aiService");
 // ==========================
@@ -169,27 +169,76 @@ const generateStoryThumbnail = (req, res) => __awaiter(void 0, void 0, void 0, f
 });
 exports.generateStoryThumbnail = generateStoryThumbnail;
 // ==========================
-// FETCH STORIES
+// FETCH USER STORIES WITH PAGINATION
 // ==========================
-const getStories = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getUserStories = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _b;
     try {
-        const stories = yield storyModel_1.Story.find({ user: (_b = req.user) === null || _b === void 0 ? void 0 : _b._id }).sort({ createdAt: -1 });
-        res.json(stories);
+        const userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b._id;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const status = req.query.status;
+        const search = req.query.search;
+        const sortBy = req.query.sortBy || 'createdAt';
+        const sortOrder = req.query.sortOrder || 'desc';
+        // Build filter object
+        const filter = { user: userId };
+        if (status) {
+            filter.status = status;
+        }
+        if (search) {
+            filter.$or = [
+                { prompt: { $regex: search, $options: 'i' } },
+                { 'chapters.title': { $regex: search, $options: 'i' } }
+            ];
+        }
+        // Build sort object
+        const sort = {};
+        sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+        // Calculate pagination
+        const skip = (page - 1) * limit;
+        // Execute query with pagination
+        const stories = yield storyModel_1.Story.find(filter)
+            .sort(sort)
+            .skip(skip)
+            .limit(limit)
+            .select('-chapters.paragraphs.imagePrompt'); // Exclude image prompts for list view
+        // Get total count for pagination
+        const totalStories = yield storyModel_1.Story.countDocuments(filter);
+        const totalPages = Math.ceil(totalStories / limit);
+        res.json({
+            stories,
+            pagination: {
+                currentPage: page,
+                totalPages,
+                totalStories,
+                hasNextPage: page < totalPages,
+                hasPrevPage: page > 1
+            }
+        });
     }
     catch (error) {
-        res.status(500).json({ message: "Error fetching stories", error: error.message });
+        res.status(500).json({ message: "Error fetching user stories", error: error.message });
     }
 });
-exports.getStories = getStories;
+exports.getUserStories = getUserStories;
 // ==========================
-// FETCH ONE STORY
+// FETCH ONE STORY BY ID (WITH USER VALIDATION)
 // ==========================
 const getStoryById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _c;
     try {
-        const story = yield storyModel_1.Story.findById(req.params.id);
-        if (!story)
-            return res.status(404).json({ message: "Story not found" });
+        const userId = (_c = req.user) === null || _c === void 0 ? void 0 : _c._id;
+        const storyId = req.params.id;
+        const story = yield storyModel_1.Story.findOne({
+            _id: storyId,
+            user: userId
+        });
+        if (!story) {
+            return res.status(404).json({
+                message: "Story not found or you don't have permission to access it"
+            });
+        }
         res.json(story);
     }
     catch (error) {
@@ -197,3 +246,144 @@ const getStoryById = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     }
 });
 exports.getStoryById = getStoryById;
+// ==========================
+// FETCH USER STORY STATISTICS
+// ==========================
+const getUserStoryStats = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _d;
+    try {
+        const userId = (_d = req.user) === null || _d === void 0 ? void 0 : _d._id;
+        const stats = yield storyModel_1.Story.aggregate([
+            { $match: { user: userId } },
+            {
+                $group: {
+                    _id: null,
+                    totalStories: { $sum: 1 },
+                    totalWords: { $sum: '$targetWords' },
+                    totalChapters: { $sum: { $size: '$chapters' } },
+                    completedStories: {
+                        $sum: {
+                            $cond: [{ $eq: ['$status', 'assets_complete'] }, 1, 0]
+                        }
+                    },
+                    inProgressStories: {
+                        $sum: {
+                            $cond: [{ $eq: ['$status', 'in_progress'] }, 1, 0]
+                        }
+                    },
+                    chaptersCompleteStories: {
+                        $sum: {
+                            $cond: [{ $eq: ['$status', 'chapters_complete'] }, 1, 0]
+                        }
+                    }
+                }
+            }
+        ]);
+        const result = stats[0] || {
+            totalStories: 0,
+            totalWords: 0,
+            totalChapters: 0,
+            completedStories: 0,
+            inProgressStories: 0,
+            chaptersCompleteStories: 0
+        };
+        res.json(result);
+    }
+    catch (error) {
+        res.status(500).json({ message: "Error fetching story statistics", error: error.message });
+    }
+});
+exports.getUserStoryStats = getUserStoryStats;
+// ==========================
+// SEARCH USER STORIES
+// ==========================
+const searchUserStories = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _e;
+    try {
+        const userId = (_e = req.user) === null || _e === void 0 ? void 0 : _e._id;
+        const { q, status, dateFrom, dateTo, sortBy, sortOrder } = req.query;
+        // Build search filter
+        const filter = { user: userId };
+        if (q) {
+            filter.$or = [
+                { prompt: { $regex: q, $options: 'i' } },
+                { 'chapters.title': { $regex: q, $options: 'i' } },
+                { 'chapters.text': { $regex: q, $options: 'i' } }
+            ];
+        }
+        if (status) {
+            filter.status = status;
+        }
+        if (dateFrom || dateTo) {
+            filter.createdAt = {};
+            if (dateFrom)
+                filter.createdAt.$gte = new Date(dateFrom);
+            if (dateTo)
+                filter.createdAt.$lte = new Date(dateTo);
+        }
+        // Build sort object
+        const sort = {};
+        sort[sortBy || 'createdAt'] = sortOrder === 'asc' ? 1 : -1;
+        const stories = yield storyModel_1.Story.find(filter)
+            .sort(sort)
+            .select('-chapters.paragraphs.imagePrompt')
+            .limit(50); // Limit search results
+        res.json({
+            stories,
+            totalResults: stories.length,
+            searchQuery: q
+        });
+    }
+    catch (error) {
+        res.status(500).json({ message: "Error searching stories", error: error.message });
+    }
+});
+exports.searchUserStories = searchUserStories;
+// ==========================
+// GET STORY BY STATUS
+// ==========================
+const getStoriesByStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _f;
+    try {
+        const userId = (_f = req.user) === null || _f === void 0 ? void 0 : _f._id;
+        const status = req.params.status;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        // Validate status
+        const validStatuses = ['in_progress', 'chapters_complete', 'assets_complete'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                message: "Invalid status. Must be one of: in_progress, chapters_complete, assets_complete"
+            });
+        }
+        const skip = (page - 1) * limit;
+        const stories = yield storyModel_1.Story.find({
+            user: userId,
+            status: status
+        })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .select('-chapters.paragraphs.imagePrompt');
+        const totalStories = yield storyModel_1.Story.countDocuments({
+            user: userId,
+            status: status
+        });
+        const totalPages = Math.ceil(totalStories / limit);
+        res.json({
+            stories,
+            status,
+            pagination: {
+                currentPage: page,
+                totalPages,
+                totalStories,
+                hasNextPage: page < totalPages,
+                hasPrevPage: page > 1
+            }
+        });
+    }
+    catch (error) {
+        res.status(500).json({ message: "Error fetching stories by status", error: error.message });
+    }
+});
+exports.getStoriesByStatus = getStoriesByStatus;
