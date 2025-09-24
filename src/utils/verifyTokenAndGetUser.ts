@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { NextFunction } from "express";
 import { config } from "dotenv";
 import { AppError } from "../errors/appError";
-import User from "../models/userModel";
+import User from "../Models/userModel";
 
 config({ path: "./config.env" });
 

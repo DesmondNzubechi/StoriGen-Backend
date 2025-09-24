@@ -1,6 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../errors/appError';
 
+// Extend Express Request interface to include files property
+declare global {
+  namespace Express {
+    interface Request {
+      files?: Express.Multer.File[];
+    }
+  }
+}
+
 // Email validation function
 const isValidEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

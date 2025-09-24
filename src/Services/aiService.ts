@@ -1,19 +1,113 @@
+// import OpenAI from "openai";
+// import { config } from "dotenv";
+
+// config({ path: "./config.env" });
+
+// const openai = new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY,
+// });
+
+// // Generate story outline
+// async function generateOutline(prompt: string, targetWords: number, targetChapters: number) {
+//   const wordsPerChapter = Math.floor(targetWords / targetChapters);
+
+//   const outlinePrompt = `
+//   You are a professional storyteller.
+//   Create a detailed outline for a ${targetWords}-word story about:
+
+//   "${prompt}"
+
+//   Divide it into ${targetChapters} chapters.
+//   For each chapter, include:
+//   - Title
+//   - Key events
+//   - Characters involved
+//   - Word target (about ${wordsPerChapter} words)
+//   `;
+
+//   const response = await openai.chat.completions.create({
+//     model: "gpt-5",
+//     messages: [{ role: "user", content: outlinePrompt }],
+//   });
+
+//   return response.choices[0].message.content;
+// }
+
+// // Stream a chapter
+// async function* streamChapter(
+//   outline: string,
+//   chapterNumber: number,
+//   totalChapters: number,
+//   wordsPerChapter: number
+// ) {
+//   const chapterPrompt = `
+//   You are writing Chapter ${chapterNumber} of a ${totalChapters}-chapter story.
+
+//   Follow this outline:
+//   ${outline}
+
+//   Rules:
+//   - Write about ${wordsPerChapter} words.
+//   - Keep characters, plot, and setting consistent with the outline.
+//   - Make it engaging, descriptive, and suitable for spoken storytelling (YouTube narration).
+//   - End with a transition that leads naturally into the next chapter (unless it’s the final chapter).
+//   - Do NOT summarize. Write full detailed narrative.
+//   `;
+
+//   const stream = await openai.chat.completions.create({
+//     model: "gpt-5",
+//     messages: [{ role: "user", content: chapterPrompt }],
+//     stream: true, // 🚨 Enable streaming
+//   });
+
+//   for await (const chunk of stream) {
+//     const token = chunk.choices[0]?.delta?.content || "";
+//     if (token) {
+//       yield token; // send each token to frontend
+//     }
+//   }
+// }
+
+// // Main function: stream the full story chapter by chapter
+// export async function* streamFullStory(
+//   prompt: string,
+//   targetWords: number,
+//   targetChapters: number
+// ) {
+//   // Step 1: Create outline (non-streamed for now)
+//   const outline: any = await generateOutline(prompt, targetWords, targetChapters);
+
+//   // Step 2: Stream chapters
+//   const wordsPerChapter = Math.floor(targetWords / targetChapters);
+
+//   for (let i = 1; i <= targetChapters; i++) {
+//     yield `\n\n--- Chapter ${i} ---\n\n`; // notify frontend a new chapter starts
+//     for await (const token of streamChapter(outline, i, targetChapters, wordsPerChapter)) {
+//       yield token;
+//     }
+//   }
+// }
+ 
+
 import OpenAI from "openai";
 import { config } from "dotenv";
 
+// Load environment variables
 config({ path: "./config.env" });
+
+if (!process.env.OPENAI_API_KEY) {
+  throw new Error("OPENAI_API_KEY environment variable is required");
+}
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Generate story outline
-async function generateOutline(prompt: string, targetWords: number, targetChapters: number) {
-  const wordsPerChapter = Math.floor(targetWords / targetChapters);
-
+// 1. Generate Story Outline
+export async function generateOutline(prompt: string, targetWords: number, targetChapters: number) {
   const outlinePrompt = `
   You are a professional storyteller.
-  Create a detailed outline for a ${targetWords}-word story about:
+  Create a detailed outline for a ${targetWords}-word African folktale story about:
 
   "${prompt}"
 
@@ -22,23 +116,24 @@ async function generateOutline(prompt: string, targetWords: number, targetChapte
   - Title
   - Key events
   - Characters involved
-  - Word target (about ${wordsPerChapter} words)
+  - Word target (about ${Math.floor(targetWords / targetChapters)} words)
   `;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-5",
+    model: "gpt-4o-mini",
     messages: [{ role: "user", content: outlinePrompt }],
   });
 
-  return response.choices[0].message.content;
+  return response.choices[0].message?.content || "";
 }
 
-// Stream a chapter
-async function* streamChapter(
+// 2. Generate One Chapter
+// Note: targetWords is optional for flexibility with existing controller usage
+export async function generateChapter(
   outline: string,
   chapterNumber: number,
   totalChapters: number,
-  wordsPerChapter: number
+  targetWords?: number
 ) {
   const chapterPrompt = `
   You are writing Chapter ${chapterNumber} of a ${totalChapters}-chapter story.
@@ -47,43 +142,137 @@ async function* streamChapter(
   ${outline}
 
   Rules:
-  - Write about ${wordsPerChapter} words.
+  - Write about ${targetWords ? Math.floor(targetWords / totalChapters) : 500} words.
   - Keep characters, plot, and setting consistent with the outline.
   - Make it engaging, descriptive, and suitable for spoken storytelling (YouTube narration).
-  - End with a transition that leads naturally into the next chapter (unless it’s the final chapter).
+  - End with a transition to the next chapter.
   - Do NOT summarize. Write full detailed narrative.
   `;
 
-  const stream = await openai.chat.completions.create({
-    model: "gpt-5",
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
     messages: [{ role: "user", content: chapterPrompt }],
-    stream: true, // 🚨 Enable streaming
   });
 
-  for await (const chunk of stream) {
-    const token = chunk.choices[0]?.delta?.content || "";
-    if (token) {
-      yield token; // send each token to frontend
-    }
-  }
+  return response.choices[0].message?.content || "";
 }
 
-// Main function: stream the full story chapter by chapter
-export async function* streamFullStory(
-  prompt: string,
-  targetWords: number,
-  targetChapters: number
-) {
-  // Step 1: Create outline (non-streamed for now)
-  const outline: any = await generateOutline(prompt, targetWords, targetChapters);
+// 3. Generate Image Prompts per Paragraph
+// Accept paragraph text and optionally the original user prompt as context
+export async function generateImagePrompts(paragraphText: string, originalPrompt?: string) {
+  const prompt = `
+  Generate a single creative image prompt for the following story paragraph.
+  Ensure consistent characters (age, attire, facial structure) across the story.
+  Make the prompt highly creative, vivid, and action-focused.
+  ${originalPrompt ? `\nOriginal story prompt/context: ${originalPrompt}\n` : ""}
+  Paragraph:
+  ${paragraphText}
+  `;
 
-  // Step 2: Stream chapters
-  const wordsPerChapter = Math.floor(targetWords / targetChapters);
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+  });
 
-  for (let i = 1; i <= targetChapters; i++) {
-    yield `\n\n--- Chapter ${i} ---\n\n`; // notify frontend a new chapter starts
-    for await (const token of streamChapter(outline, i, targetChapters, wordsPerChapter)) {
-      yield token;
-    }
-  }
+  return response.choices[0].message?.content || "";
 }
+
+// 4. Generate Metadata (Titles, Description, Synopsis, Thumbnail)
+export async function generateMetadata(fullStory: string) {
+  const metaPrompt = `
+  You are a YouTube expert who specialises in viral African folktale videos.
+
+  Based on the following story, generate:
+  - A high-CTR YouTube description (SEO optimized).
+  - A synopsis (2–3 sentences).
+  - 5 outstanding title ideas.
+  - A thumbnail prompt with vibrant colours.
+
+  Story:
+  ${fullStory}
+  `;
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: metaPrompt }],
+  });
+
+  return response.choices[0].message?.content || "";
+}
+
+
+
+/**
+ * Generate SEO optimized YouTube description + synopsis
+ */
+export async function generateDescription(fullStory: string) {
+  const prompt = `
+  You are a YouTube expert for viral African folktale storytelling videos.
+
+  Based on the following story, write:
+  - A high-CTR YouTube video description (SEO optimized with keywords like African folktale, storytelling, bedtime story, etc.)
+  - A 2–3 sentence synopsis that hooks the audience.
+
+  Story:
+  ${fullStory}
+  `;
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  return response.choices[0].message?.content || "";
+}
+
+/**
+ * Generate 5 outstanding, high-CTR YouTube title ideas
+ */
+export async function generateTitles(fullStory: string) {
+  const prompt = `
+  You are a YouTube strategist. 
+  Generate 5 unique, outstanding title ideas for the following African folktale story.
+  Rules:
+  - Titles should be engaging, click-worthy, and optimized for YouTube search.
+  - Avoid being too long (max 60 characters).
+  - Make sure they are different variations, not just rephrasing.
+
+  Story:
+  ${fullStory}
+  `;
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  return response.choices[0].message?.content || "";
+}
+
+/**
+ * Generate creative thumbnail prompt
+ */
+export async function generateThumbnailPrompt(fullStory: string) {
+  const prompt = `
+  You are an expert thumbnail designer for viral YouTube videos.
+  
+  Based on the following story, generate a SINGLE, detailed thumbnail prompt.
+  Rules:
+  - Use vibrant colours.
+  - Include the main character(s) in a dramatic pose or action.
+  - Make it visually striking so it stands out on YouTube feeds.
+  - Keep it culturally authentic (African folktale theme).
+  - The prompt should be suitable for AI image generators like MidJourney or Stable Diffusion.
+
+  Story:
+  ${fullStory}
+  `;
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  return response.choices[0].message?.content || "";
+}
+

@@ -1,4 +1,4 @@
-import User from "../models/userModel";
+import User from "../Models/userModel";
 
 export const generatEmailVerificationCode = async () => {
   let isCodeUnique = false;

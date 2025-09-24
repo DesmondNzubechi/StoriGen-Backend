@@ -13,7 +13,7 @@ import { generatEmailVerificationCode } from "../utils/emailVerificationCode";
 config({ path: "./config.env" });
 
 const { JWT_EXPIRES_IN, JWT_SECRET, JWT_COOKIE_EXPIRES, ORIGIN_URL } =
-  process.env;
+  process.env; 
 
 if (!JWT_EXPIRES_IN || !JWT_SECRET || !JWT_COOKIE_EXPIRES || !ORIGIN_URL) {
   throw new AppError(
@@ -23,7 +23,7 @@ if (!JWT_EXPIRES_IN || !JWT_SECRET || !JWT_COOKIE_EXPIRES || !ORIGIN_URL) {
 }
 
 const signInToken = async (id: string) => {
-  return jwt.sign({ id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN || "10d"});
+  return jwt.sign({ id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN || "10d" } as jwt.SignOptions);
 };
 
 export const createAndSendTokenToUser = async (
