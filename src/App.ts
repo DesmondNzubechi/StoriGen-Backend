@@ -42,6 +42,13 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 app.use("/api/story", storyRoutes);
 app.use("/api/v1/auth", authRoutes);
 
+
+// Root route
+app.get('/', (req, res) => {
+  res.json({ message: "StoriGen API is running!" });
+});
+
+
 // Global error handler
 app.use(globalErrorHandler);
  

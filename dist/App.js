@@ -38,6 +38,10 @@ app.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.de
 }));
 app.use("/api/story", storyRoutes_1.default);
 app.use("/api/v1/auth", authRoute_1.default);
+// Root route
+app.get('/', (req, res) => {
+    res.json({ message: "StoriGen API is running!" });
+});
 // Global error handler
 app.use(errorController_1.default);
 exports.default = app;
