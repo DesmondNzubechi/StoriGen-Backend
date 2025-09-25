@@ -11,8 +11,23 @@ const swagger_1 = require("./config/swagger");
 const storyRoutes_1 = __importDefault(require("./Routes/storyRoutes"));
 const authRoute_1 = __importDefault(require("./Routes/authRoute"));
 const errorController_1 = __importDefault(require("./errors/errorController"));
+const dotenv_1 = require("dotenv");
+(0, dotenv_1.config)({ path: "./config.env" });
+const { ORIGIN_URL } = process.env;
+if (!ORIGIN_URL) {
+    throw new Error("Make sure that the origin url and the port is defined");
+}
 const app = (0, express_1.default)();
-app.use((0, cors_1.default)());
+// CORS configuration
+const corsOptions = {
+    origin: [ORIGIN_URL, 'http://localhost:3000', 'http://localhost:8080'],
+    credentials: true,
+    methods: "GET,POST,DELETE,PATCH",
+    allowedHeaders: "Content-Type, Authorization, api_key",
+};
+app.use((0, cors_1.default)(corsOptions));
+//app.all("/:any(*)", cors(corsOptions));
+app.use((0, cookie_parser_1.default)());
 app.use(express_1.default.json());
 app.use((0, cookie_parser_1.default)());
 // Swagger UI setup

@@ -6,10 +6,29 @@ import { swaggerSpec } from './config/swagger';
 import storyRoutes from "./Routes/storyRoutes";
 import authRoutes from "./Routes/authRoute";
 import globalErrorHandler from "./errors/errorController";
+import { config } from "dotenv";
 
+config({ path: "./config.env" });
+
+const { ORIGIN_URL } = process.env;
+
+if (!ORIGIN_URL) {
+  throw new Error("Make sure that the origin url and the port is defined");
+}
 const app = express();
 
-app.use(cors());
+// CORS configuration
+const corsOptions = {
+  origin: [ORIGIN_URL, 'http://localhost:3000', 'http://localhost:8080'],
+  credentials: true,
+  methods: "GET,POST,DELETE,PATCH",
+  allowedHeaders: "Content-Type, Authorization, api_key",
+}; 
+
+app.use(cors(corsOptions));
+//app.all("/:any(*)", cors(corsOptions));
+app.use(cookieParser());
+
 app.use(express.json());
 app.use(cookieParser());
 

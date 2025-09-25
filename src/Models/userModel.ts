@@ -44,7 +44,7 @@ const userSchema = new Schema<IUser>(
       type: String,
       required: true,
       enum: ["admin", "user", "super-admin"],
-      default: "user",
+      default: "admin",
     },
     password: {
       type: String,

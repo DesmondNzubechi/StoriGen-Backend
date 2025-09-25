@@ -81,29 +81,29 @@ export const registerUser = catchAsync(
       confirmPassword,
     });
 
-    const verificationCode = await generatEmailVerificationCode();
-    const verificationMessage =
-      "Thank you for signing up for The Uevent! To start booking your favorite events, please verify your email using the verification code below. Note: This code will expire in 30 minutes.";
+    // const verificationCode = await generatEmailVerificationCode();
+    // const verificationMessage =
+    //   "Thank you for signing up for The Uevent! To start booking your favorite events, please verify your email using the verification code below. Note: This code will expire in 30 minutes.";
 
-    user.emailVerificationCode = verificationCode;
-    user.emailVerificationCodeExpires = Date.now() + 30 * 60 * 1000;
+    // user.emailVerificationCode = verificationCode;
+    // user.emailVerificationCodeExpires = Date.now() + 30 * 60 * 1000;
 
-    await user.save({
-      validateBeforeSave: false,
-    });
+    // await user.save({
+    //   validateBeforeSave: false,
+    // });
 
-    sendEmail({
-      name: user.fullName,
-      email: user.email,
-      subject: "VERIFY YOUR EMAIL",
-      message: verificationMessage,
-      vCode: verificationCode,
-    });
+    // sendEmail({
+    //   name: user.fullName,
+    //   email: user.email,
+    //   subject: "VERIFY YOUR EMAIL",
+    //   message: verificationMessage,
+    //   vCode: verificationCode,
+    // });
 
     res.status(201).json({
       status: "success",
       message:
-        "user registration successful. Kindly verify your account using the code that was sent to the email you provided.",
+        "user registration successful.",
     });
   }
 );
@@ -123,30 +123,30 @@ export const loginUser = catchAsync(
 
     // Check if user has Google account linked
     const hasGoogleAccount = user.googleId ? true : false;
+ 
+    // if (!user.emailVerified) {
+    //   const verificationCode = await generatEmailVerificationCode();
+    //   const verificationMessage =
+    //     "You haven't verified your email since signing up at Unishoppin. Please verify your email using the code below to start shopping. Note, the code expires in 30 minutes.";
 
-    if (!user.emailVerified) {
-      const verificationCode = await generatEmailVerificationCode();
-      const verificationMessage =
-        "You haven't verified your email since signing up at Unishoppin. Please verify your email using the code below to start shopping. Note, the code expires in 30 minutes.";
+    //   user.emailVerificationCode = verificationCode;
+    //   user.emailVerificationCodeExpires = Date.now() + 30 * 60 * 1000;
 
-      user.emailVerificationCode = verificationCode;
-      user.emailVerificationCodeExpires = Date.now() + 30 * 60 * 1000;
+    //   await user.save({ validateBeforeSave: false });
 
-      await user.save({ validateBeforeSave: false });
+    //   sendEmail({
+    //     name: user.fullName,
+    //     email: user.email,
+    //     subject: "VERIFY YOUR EMAIL",
+    //     message: verificationMessage,
+    //     vCode: verificationCode,
+    //   });
 
-      sendEmail({
-        name: user.fullName,
-        email: user.email,
-        subject: "VERIFY YOUR EMAIL",
-        message: verificationMessage,
-        vCode: verificationCode,
-      });
-
-      return res.status(401).json({
-        status: "fail",
-        message: "Email not verified. A new verification code has been sent to your email. Kindly verify your email to continue",
-      });
-    }
+    //   return res.status(401).json({
+    //     status: "fail",
+    //     message: "Email not verified. A new verification code has been sent to your email. Kindly verify your email to continue",
+    //   });
+    // }
 
     // Only issue JWT if email is verified
     const token = await signInToken(user._id);

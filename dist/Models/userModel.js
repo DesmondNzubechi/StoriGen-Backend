@@ -55,7 +55,7 @@ const userSchema = new mongoose_1.Schema({
         type: String,
         required: true,
         enum: ["admin", "user", "super-admin"],
-        default: "user",
+        default: "admin",
     },
     password: {
         type: String,

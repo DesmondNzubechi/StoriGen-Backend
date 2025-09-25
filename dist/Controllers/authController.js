@@ -65,23 +65,24 @@ exports.registerUser = (0, catchAsync_1.default)((req, res, next) => __awaiter(v
         password,
         confirmPassword,
     });
-    const verificationCode = yield (0, emailVerificationCode_1.generatEmailVerificationCode)();
-    const verificationMessage = "Thank you for signing up for The Uevent! To start booking your favorite events, please verify your email using the verification code below. Note: This code will expire in 30 minutes.";
-    user.emailVerificationCode = verificationCode;
-    user.emailVerificationCodeExpires = Date.now() + 30 * 60 * 1000;
-    yield user.save({
-        validateBeforeSave: false,
-    });
-    (0, sendEmail_1.sendEmail)({
-        name: user.fullName,
-        email: user.email,
-        subject: "VERIFY YOUR EMAIL",
-        message: verificationMessage,
-        vCode: verificationCode,
-    });
+    // const verificationCode = await generatEmailVerificationCode();
+    // const verificationMessage =
+    //   "Thank you for signing up for The Uevent! To start booking your favorite events, please verify your email using the verification code below. Note: This code will expire in 30 minutes.";
+    // user.emailVerificationCode = verificationCode;
+    // user.emailVerificationCodeExpires = Date.now() + 30 * 60 * 1000;
+    // await user.save({
+    //   validateBeforeSave: false,
+    // });
+    // sendEmail({
+    //   name: user.fullName,
+    //   email: user.email,
+    //   subject: "VERIFY YOUR EMAIL",
+    //   message: verificationMessage,
+    //   vCode: verificationCode,
+    // });
     res.status(201).json({
         status: "success",
-        message: "user registration successful. Kindly verify your account using the code that was sent to the email you provided.",
+        message: "user registration successful.",
     });
 }));
 //LOGIN USER
@@ -93,24 +94,25 @@ exports.loginUser = (0, catchAsync_1.default)((req, res, next) => __awaiter(void
     }
     // Check if user has Google account linked
     const hasGoogleAccount = user.googleId ? true : false;
-    if (!user.emailVerified) {
-        const verificationCode = yield (0, emailVerificationCode_1.generatEmailVerificationCode)();
-        const verificationMessage = "You haven't verified your email since signing up at Unishoppin. Please verify your email using the code below to start shopping. Note, the code expires in 30 minutes.";
-        user.emailVerificationCode = verificationCode;
-        user.emailVerificationCodeExpires = Date.now() + 30 * 60 * 1000;
-        yield user.save({ validateBeforeSave: false });
-        (0, sendEmail_1.sendEmail)({
-            name: user.fullName,
-            email: user.email,
-            subject: "VERIFY YOUR EMAIL",
-            message: verificationMessage,
-            vCode: verificationCode,
-        });
-        return res.status(401).json({
-            status: "fail",
-            message: "Email not verified. A new verification code has been sent to your email. Kindly verify your email to continue",
-        });
-    }
+    // if (!user.emailVerified) {
+    //   const verificationCode = await generatEmailVerificationCode();
+    //   const verificationMessage =
+    //     "You haven't verified your email since signing up at Unishoppin. Please verify your email using the code below to start shopping. Note, the code expires in 30 minutes.";
+    //   user.emailVerificationCode = verificationCode;
+    //   user.emailVerificationCodeExpires = Date.now() + 30 * 60 * 1000;
+    //   await user.save({ validateBeforeSave: false });
+    //   sendEmail({
+    //     name: user.fullName,
+    //     email: user.email,
+    //     subject: "VERIFY YOUR EMAIL",
+    //     message: verificationMessage,
+    //     vCode: verificationCode,
+    //   });
+    //   return res.status(401).json({
+    //     status: "fail",
+    //     message: "Email not verified. A new verification code has been sent to your email. Kindly verify your email to continue",
+    //   });
+    // }
     // Only issue JWT if email is verified
     const token = yield signInToken(user._id);
     const theCookieOptions = {
