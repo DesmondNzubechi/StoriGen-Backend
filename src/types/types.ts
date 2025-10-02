@@ -64,3 +64,32 @@ export interface productType {
 export interface AuthenticatedRequest extends Request {
   user: IUser;
 }
+
+
+export type Niche =
+  // 🎭 Entertainment & Storytelling
+  | 'drama'
+  | 'comedy'
+  | 'fantasy'
+  | 'adventure'
+  | 'romance'
+  | 'crime_thriller'
+  | 'horror'
+
+  // 🌍 Cultural & Traditional
+  | 'african_folktale'
+  | 'mythology'
+  | 'cultural_legends'
+  | 'historical_drama'
+
+  // 🌙 Bedtime & Family Friendly
+  | 'bedtime_story'
+  | 'fairy_tale'
+  | 'animal_story'
+  | 'educational_fun'
+
+  // 💡 Inspirational & Educational
+  | 'wisdom_motivational'
+  | 'historical_educational'
+  | 'biographical'
+  | 'faith_spiritual';

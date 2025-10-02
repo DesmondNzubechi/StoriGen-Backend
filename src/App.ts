@@ -5,6 +5,8 @@ import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 import storyRoutes from "./Routes/storyRoutes";
 import authRoutes from "./Routes/authRoute";
+import ideasRoutes from './Routes/ideas';
+import summariesRoutes from './Routes/summaries';
 import globalErrorHandler from "./errors/errorController";
 import { config } from "dotenv";
 
@@ -19,7 +21,7 @@ const app = express();
 
 // CORS configuration
 const corsOptions = {
-  origin: [ORIGIN_URL, 'http://localhost:3000', 'http://localhost:8080'],
+  origin: [ORIGIN_URL, 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:8080'],
   credentials: true,
   methods: "GET,POST,DELETE,PATCH",
   allowedHeaders: "Content-Type, Authorization, api_key",
@@ -40,7 +42,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 }));
 
 app.use("/api/story", storyRoutes);
+app.use('/api/summaries', summariesRoutes);
 app.use("/api/v1/auth", authRoutes);
+app.use('/api/ideas', ideasRoutes);
 
 
 // Root route
