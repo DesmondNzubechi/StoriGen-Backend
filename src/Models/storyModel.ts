@@ -102,6 +102,7 @@ interface IYouTubeAssets {
   description?: string;
   thumbnailPrompt?: string;
   hashtags?: string[];
+  shortsHooks: any[]
 }
 
 export interface IStory extends Document {
@@ -113,15 +114,26 @@ export interface IStory extends Document {
   characterProfile?: string;
   summary: string;
   chapters: IChapter[];
+  chapterImagePrompts: IChapterImagePrompts[];
   youtubeAssets: IYouTubeAssets;
   status: "in_progress" | "chapters_complete" | "assets_complete" | "completed";
   createdAt: Date;
   updatedAt: Date;
 }
 
+interface IChapterImagePrompts {
+  chapter: number;            // which chapter these prompts belong to
+  prompts: string[];          // one prompt per paragraph
+}
+
 const paragraphSchema = new Schema<IParagraph>({
   text: { type: String, required: true },
   imagePrompt: { type: String },
+});
+
+const chapterImagePromptsSchema = new Schema<IChapterImagePrompts>({
+  chapter: { type: Number, required: true },
+  prompts: [{ type: String, required: true }],
 });
 
 const outlineItemSchema = new Schema<IOutlineItem>({
@@ -144,6 +156,7 @@ const youtubeAssetsSchema = new Schema<IYouTubeAssets>({
   description: { type: String },
   thumbnailPrompt: { type: String },
   hashtags: [{ type: String }],
+  shortsHooks: [{type: String}]
 });
 
 const storySchema = new Schema<IStory>(
@@ -156,13 +169,15 @@ const storySchema = new Schema<IStory>(
     summary: { type: String, required: true },
     characterProfile: { type: String },
     chapters: [chapterSchema],
+   chapterImagePrompts: [chapterImagePromptsSchema],
     youtubeAssets: {
       type: youtubeAssetsSchema, default: {
       synopsis: "",
   titles: [],
   description: "",
-  thumbnailPrompt: "",
-  hashtags: [],
+  thumbnailPrompt: "", 
+        hashtags: [],
+  shortsHooks: []
     } },
     status: {
       type: String,

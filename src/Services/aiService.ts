@@ -24,7 +24,7 @@ export interface PromptCustomization {
   style?: "viral" | "educational" | "entertainment" | "cultural" | string;
   targetAudience?: "children" | "adults" | "family" | "teens" | string;
   themes?: string;
-  niche?: Niche | string; // ✅ now strongly typed
+  niche?: Niche | string; 
   settings?: string;
 }
 export class AIService {
@@ -470,4 +470,64 @@ Example JSON format to follow:
 
     return response.choices[0].message?.content || "";
   }
+
+  //Generate shorthooks
+  static async generateShortsHooks(fullStory: string) {
+  const prompt = `
+  You are a YouTube strategist and scriptwriter for viral storytelling Shorts.
+
+  Analyze the story below and determine its type/genre 
+  (e.g., African folktale, fantasy, horror, romance, sci-fi, mystery, etc.).
+
+  Based on the story, create 5 different YouTube Shorts opening hooks 
+  (5–10 seconds each).
+
+  Rules:
+  ● Start with a shocking question, mysterious statement, or dramatic action.
+  ● Use suspenseful and emotional language that makes the viewer curious to keep watching.
+  ● Keep sentences short, punchy, and cinematic (ideal for Shorts format).
+  ● Style should feel like viral storytelling channels: engaging, mysterious, and full of tension.
+  ● Deliver results as a clean numbered list (1–5).
+
+  Story:
+  ${fullStory}
+  `;
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  return response.choices[0].message?.content || "";
+}
+
+  //Generate SEO keywords and hashtags
+  static async generateSEOKeywords(fullStory: string) {
+    const prompt = `
+  You are a YouTube SEO expert and viral content strategist.
+
+  Analyze the story below and determine its type/genre 
+  (e.g., African folktale, fantasy, horror, romance, sci-fi, mystery, etc.).
+
+  Based on the story, generate SEO-optimized keywords and hashtags.
+
+  Rules:
+  ● Generate 15 SEO keywords (2-4 words each) that are relevant to the story's genre, themes, and cultural elements.
+  ● Generate 10 trending YouTube hashtags that mix general storytelling tags with specific cultural/genre tags.
+  ● Keywords should include terms like: storytelling, folktale, African stories, bedtime stories, viral stories, etc.
+  ● Hashtags should be formatted with # and include both broad and niche tags.
+  ● Focus on terms that would help the video rank well in YouTube search and recommendations.
+
+  Story:
+  ${fullStory}
+  `;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    return response.choices[0].message?.content || "";
+  }
+
 }
