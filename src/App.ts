@@ -6,6 +6,7 @@ import { swaggerSpec } from './config/swagger';
 import storyRoutes from "./Routes/storyRoutes";
 import authRoutes from "./Routes/authRoute";
 import ideasRoutes from './Routes/ideas';
+import shortsRoutes from './Routes/shortsRoute';
 import summariesRoutes from './Routes/summaries';
 import globalErrorHandler from "./errors/errorController";
 import { config } from "dotenv";
@@ -45,6 +46,7 @@ app.use("/api/story", storyRoutes);
 app.use('/api/summaries', summariesRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use('/api/ideas', ideasRoutes);
+app.use('/api/shorts', shortsRoutes);
 
 
 // Root route

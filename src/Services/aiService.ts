@@ -27,7 +27,103 @@ export interface PromptCustomization {
   niche?: Niche | string; 
   settings?: string;
 }
+interface MotivationCustomization {
+  typeOfMotivation: string; // e.g. "Fitness Motivation"
+  theme: string;            // e.g. "Discipline"
+  targetWord?: string;      // e.g. "consistency"
+}
+
 export class AIService {
+//generate motivational speech
+    static async generateMotivationalSpeech(
+    customizations: MotivationCustomization
+  ): Promise<{
+    title: string;
+    caption: string;
+    hashTag: string;
+    content: string;
+    imagePrompts: string[];
+  }> {
+    const { typeOfMotivation, theme, targetWord } = customizations;
+
+    const target = targetWord || "success";
+
+    // 🧠 Prompt carefully crafted for motivational scripts
+    const prompt = `
+Generate a powerful motivational script focused on the following details:
+
+Type of motivation: ${typeOfMotivation}
+Theme: ${theme}
+Target word or message: ${target}
+
+Requirements:
+1. The speech should sound cinematic, emotionally charged, and realistic — like something you'd hear in a viral motivational short.
+2. Structure the script into 3–5 short paragraphs (each representing a distinct emotional beat).
+3. Each paragraph should be vivid, direct, and relatable to the chosen theme and motivation type.
+4. After writing the full script, provide:
+   - A viral YouTube-style title (inspirational and short)
+   - A short caption for TikTok/YouTube description
+   - 5–7 relevant hashtags
+   - 1 short image prompt per paragraph (for AI image generation — match mood and emotion)
+
+Format the response as:
+Title:
+<your generated title>
+
+Caption:
+<caption>
+
+Hashtags:
+<comma separated hashtags>
+
+Script:
+<paragraph 1>
+<paragraph 2>
+<paragraph 3> (and so on)
+
+Image Prompts:
+1. <prompt for paragraph 1>
+2. <prompt for paragraph 2>
+3. <prompt for paragraph 3>
+`;
+
+    // Call OpenAI model
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.9,
+    });
+
+    const rawOutput = response.choices[0]?.message?.content || "";
+
+    // 🪄 Parse response intelligently
+    const titleMatch = rawOutput.match(/Title:\s*(.*)/i);
+    const captionMatch = rawOutput.match(/Caption:\s*([\s\S]*?)\n\s*Hashtags:/i);
+    const hashtagsMatch = rawOutput.match(/Hashtags:\s*(.*)/i);
+    const scriptMatch = rawOutput.match(/Script:\s*([\s\S]*?)\n\s*Image Prompts:/i);
+    const imagePromptsMatch = rawOutput.match(/Image Prompts:\s*([\s\S]*)/i);
+
+    const title = titleMatch?.[1]?.trim() || "Untitled Motivation";
+    const caption = captionMatch?.[1]?.trim() || "Stay motivated.";
+    const hashTag = hashtagsMatch?.[1]?.trim() || "#Motivation #Mindset #Discipline";
+    const content = scriptMatch?.[1]?.trim() || rawOutput;
+    const imagePrompts = imagePromptsMatch
+      ? imagePromptsMatch[1]
+          .split(/\n\d+\.\s*/)
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : [];
+
+    return {
+      title,
+      caption,
+      hashTag,
+      content,
+      imagePrompts,
+    };
+  }
+
+
   // Generate 10 viral story ideas
   static async generateViralIdeas(
     customizations: PromptCustomization
