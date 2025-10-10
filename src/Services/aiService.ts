@@ -213,7 +213,7 @@ Output must be exactly this JSON object:
           100
         )}...`,
       }));
-    }
+    } 
   }
 
   //Generate Chapters
@@ -371,6 +371,38 @@ Example JSON format to follow:
     return response.choices[0].message?.content || "";
   }
 
+  //Generate a single viral YouTube title
+  static async generateViralTitle(fullStory: string) {
+    const prompt = `
+  You are a YouTube strategist and viral title expert.
+
+  Analyze the story below and first identify its type/genre 
+  (e.g., African folktale, romance, fantasy, horror, sci-fi, mystery, etc.).
+
+  Based on that, generate 1 viral YouTube title for the story.
+
+  Rules for the title:
+  ● Title must be under 65 characters.
+  ● Use emotional, suspenseful, or mysterious words 
+    (e.g., shocking, forbidden, untold, cursed, betrayed, secret, mysterious, lost, haunted).
+  ● Include cultural or genre-specific cues 
+    (e.g., palace, king, queen, bride, village, forest, spirits, throne, wedding, galaxy, haunted house, etc.).
+  ● Hint at the conflict or twist without revealing the full outcome.
+  ● Style: cinematic, dramatic, and curiosity-driven, like successful viral storytelling channels.
+  ● Return ONLY the title, no numbering or additional text.
+
+  Story:
+  ${fullStory}
+  `;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    return response.choices[0].message?.content || "";
+  }
+
   //Generate 5 outstanding, high-CTR YouTube title ideas
   static async generateTitles(fullStory: string) {
     const prompt = `
@@ -401,7 +433,7 @@ Example JSON format to follow:
     });
 
     return response.choices[0].message?.content || "";
-  }
+  } 
 
   //Generate SEO optimized YouTube description + synopsis
   static async generateDescription(fullStory: string) {

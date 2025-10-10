@@ -208,6 +208,7 @@ export const getFullStory = async (req: Request, res: Response, next: NextFuncti
           characterProfile: story.characterProfile,
           youtubeAssets: story.youtubeAssets,
           status: story.status,
+          chapterImagePrompts: story.chapterImagePrompts,
           createdAt: story.createdAt,
           updatedAt: story.updatedAt,
           chapters: paginatedChapters,
@@ -261,7 +262,7 @@ export const getStoryUserById = async (req: Request, res: Response, next: NextFu
       data: story,
     });
   } catch (error: any) {
-    res.status(500).json({
+    res.status(500).json({ 
       success: false,
       message: "Error fetching story",
       error: error.message,
@@ -311,11 +312,11 @@ export const updateScript = async (req: Request, res: Response, next: NextFuncti
     });
   }
 };
-
+ 
 
 //GENERATE STORY TITLE
-// === Generate Viral Titles ===
-export const generateViralTitles = async (req: Request, res: Response, next: NextFunction) => {
+// === Generate Single Viral Title ===
+export const generateViralTitle = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { storyId } = req.params;
 
@@ -340,37 +341,88 @@ export const generateViralTitles = async (req: Request, res: Response, next: Nex
     // Generate full story text for context
     const fullStory = story.chapters.map(ch => ch.content).join("\n\n") || story.summary || story.prompt;
 
-    // Generate titles
-    const titlesResponse = await AIService.generateTitles(fullStory);
-    
-    // Parse the response to extract individual titles
-    const titles = titlesResponse
-      .split(/\n|\r|\r\n/g)
-      .map((t: string) => t.replace(/^[-*\d\.\)\s]+/, "").trim())
-      .filter(Boolean)
-      .slice(0, 10); // Limit to 10 titles
+    // Generate single viral title
+    const viralTitle = await AIService.generateViralTitle(fullStory);
 
-    // Update story
-    story.youtubeAssets.titles = titles;
+    // Update story - store in youtubeAssets.titles array (first element)
+    if (!story.youtubeAssets.titles) {
+      story.youtubeAssets.titles = [];
+    }
+    story.youtubeAssets.titles = [viralTitle];
     await story.save();
 
     res.status(200).json({
       success: true,
-      message: "Viral titles generated successfully",
+      message: "Viral title generated successfully",
       data: {
         storyId: story._id,
-        titles: titles,
+        viralTitle: viralTitle,
         updatedStory: story
       }
     });
   } catch (err: any) {
     res.status(500).json({ 
       success: false, 
-      message: "Error generating viral titles",
+      message: "Error generating viral title",
       error: err.message 
     });
   }
 };
+
+// === Generate Viral Description ===
+export const generateViralDescription = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { storyId } = req.params;
+
+    // Check authentication
+    const token = req.cookies.jwt;
+    if (!token) {
+      return next(new AppError("You are not authorised to access this route", 401));
+    }
+
+    const user = await verifyTokenAndGetUser(token, next);
+    if (!user) return;
+
+    // Find story and verify ownership
+    const story = await Story.findOne({ _id: storyId, user: user._id });
+    if (!story) {
+      return res.status(404).json({
+        success: false,
+        message: "Story not found",
+      });
+    }
+
+    // Generate full story text for AI context
+    const fullStory = story.chapters.map(ch => ch.content).join("\n\n") || story.summary || story.prompt;
+
+    // Generate description using AI service
+    const descriptionResponse = await AIService.generateDescription(fullStory);
+
+    // Clean and format response (optional)
+    const description = descriptionResponse.trim();
+
+    // Update story with new viral description
+    story.youtubeAssets.description = description;
+    await story.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Viral description generated successfully",
+      data: {
+        storyId: story._id,
+        viralDescription: description,
+        updatedStory: story,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      message: "Error generating viral description",
+      error: err.message,
+    });
+  }
+};
+
 
 // === Generate Viral Thumbnail Prompts ===
 export const generateViralThumbnailPrompts = async (req: Request, res: Response, next: NextFunction) => {

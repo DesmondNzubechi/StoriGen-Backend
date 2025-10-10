@@ -11,7 +11,7 @@ if (!PORT || !DATABASE_URL) {
 }
 
 const DB = DATABASE_URL;
- 
+  
 mongoose
   .connect(DB)
   .then(() => {

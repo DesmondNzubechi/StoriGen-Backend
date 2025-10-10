@@ -95,7 +95,7 @@ interface IOutlineItem {
   purpose: string;
   description: string;
 }
-
+ 
 interface IYouTubeAssets {
   synopsis?: string;
   titles?: string[];
@@ -141,7 +141,7 @@ const outlineItemSchema = new Schema<IOutlineItem>({
   purpose: { type: String, required: true },
   description: { type: String, required: true },
 });
-
+ 
 const chapterSchema = new Schema<IChapter>({
   number: { type: Number, required: true },
   title: { type: String },
