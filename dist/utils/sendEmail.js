@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -25,7 +16,7 @@ if (!EMAIL_HOST ||
     !EMAIL_FROM) {
     throw new appError_1.AppError("Please make sure that these environmental variables exist", 400);
 }
-const sendEmail = (options) => __awaiter(void 0, void 0, void 0, function* () {
+const sendEmail = async (options) => {
     try {
         const transporter = nodemailer_1.default.createTransport({
             host: EMAIL_HOST,
@@ -157,11 +148,11 @@ const sendEmail = (options) => __awaiter(void 0, void 0, void 0, function* () {
             name: options.name,
             html: emailTemplate,
         };
-        yield transporter.sendMail(mailOptions);
+        await transporter.sendMail(mailOptions);
         console.log("successful");
     }
     catch (error) {
         throw new appError_1.AppError("An error occured. could you please try again", 400);
     }
-});
+};
 exports.sendEmail = sendEmail;

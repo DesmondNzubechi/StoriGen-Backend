@@ -37,6 +37,8 @@ import { AppError } from "../errors/appError";
         theme,
         targetWord,
       });
+        
+        console.log("The result", aiResult)
 
       // Save to DB
       const newShort = await ShortsModel.create({

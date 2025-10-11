@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -65,7 +56,7 @@ const upload = (0, multer_1.default)({
 // Export multer middleware for multiple images
 exports.uploadMultipleImages = upload.array("images", 10);
 // Function to upload multiple images to Cloudinary
-const uploadImagesToCloudinary = (files, folder = "products") => __awaiter(void 0, void 0, void 0, function* () {
+const uploadImagesToCloudinary = async (files, folder = "products") => {
     try {
         // Ensure Cloudinary is properly configured before upload
         const { CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, CLOUD_NAME } = process.env;
@@ -79,7 +70,7 @@ const uploadImagesToCloudinary = (files, folder = "products") => __awaiter(void 
             api_secret: CLOUDINARY_API_SECRET
         });
         console.log("Uploading to Cloudinary with cloud_name:", CLOUD_NAME.trim());
-        const uploadPromises = files.map((file) => __awaiter(void 0, void 0, void 0, function* () {
+        const uploadPromises = files.map(async (file) => {
             return new Promise((resolve, reject) => {
                 const stream = cloudinary_1.v2.uploader.upload_stream({
                     resource_type: "image",
@@ -103,30 +94,30 @@ const uploadImagesToCloudinary = (files, folder = "products") => __awaiter(void 
                 });
                 stream.end(file.buffer);
             });
-        }));
-        const uploadedUrls = yield Promise.all(uploadPromises);
+        });
+        const uploadedUrls = await Promise.all(uploadPromises);
         return uploadedUrls;
     }
     catch (error) {
         throw new Error(`Failed to upload images to Cloudinary: ${error}`);
     }
-});
+};
 exports.uploadImagesToCloudinary = uploadImagesToCloudinary;
 // Function to delete images from Cloudinary
-const deleteImagesFromCloudinary = (imageUrls) => __awaiter(void 0, void 0, void 0, function* () {
+const deleteImagesFromCloudinary = async (imageUrls) => {
     try {
-        const deletePromises = imageUrls.map((url) => __awaiter(void 0, void 0, void 0, function* () {
+        const deletePromises = imageUrls.map(async (url) => {
             const publicId = extractPublicIdFromUrl(url);
             if (publicId) {
                 return cloudinary_1.v2.uploader.destroy(publicId);
             }
-        }));
-        yield Promise.all(deletePromises);
+        });
+        await Promise.all(deletePromises);
     }
     catch (error) {
         throw new Error(`Failed to delete images from Cloudinary: ${error}`);
     }
-});
+};
 exports.deleteImagesFromCloudinary = deleteImagesFromCloudinary;
 // Helper function to extract public ID from Cloudinary URL
 const extractPublicIdFromUrl = (url) => {

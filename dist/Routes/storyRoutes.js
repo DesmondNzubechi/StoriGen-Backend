@@ -9,73 +9,12 @@ const authController_1 = require("../Controllers/authController");
 const router = express_1.default.Router();
 /**
  * @swagger
- * /api/story/init:
+ * /api/story/chapters:
  *   post:
- *     summary: Initialize a new story
+ *     summary: Generate a single chapter for a story (chapter-by-chapter)
  *     tags: [Stories]
  *     security:
  *       - bearerAuth: []
- *       - cookieAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - prompt
- *               - targetWords
- *               - targetChapters
- *             properties:
- *               prompt:
- *                 type: string
- *                 description: The story prompt/idea
- *                 example: "A young girl discovers a magical forest"
- *               targetWords:
- *                 type: number
- *                 description: Target word count for the story
- *                 example: 2000
- *               targetChapters:
- *                 type: number
- *                 description: Number of chapters to generate
- *                 example: 5
- *     responses:
- *       201:
- *         description: Story initialized successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Story'
- *       400:
- *         description: Missing required fields
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       401:
- *         description: Not authenticated
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-router.post("/init", authController_1.protectedRoute, storyController_1.initStory);
-/**
- * @swagger
- * /api/story/{storyId}/chapters:
- *   post:
- *     summary: Generate a story chapter
- *     tags: [Stories]
- *     security:
- *       - bearerAuth: []
- *       - cookieAuth: []
- *     parameters:
- *       - in: path
- *         name: storyId
- *         required: true
- *         schema:
- *           type: string
- *         description: Story ID
  *     requestBody:
  *       required: true
  *       content:
@@ -84,32 +23,97 @@ router.post("/init", authController_1.protectedRoute, storyController_1.initStor
  *             type: object
  *             required:
  *               - chapterNumber
+ *               - totalChapters
  *             properties:
+ *               storyId:
+ *                 type: string
+ *                 description: Existing story ID (omit if creating a new story with chapter 1)
+ *               summary:
+ *                 type: string
+ *                 description: Required only when creating a new story (Chapter 1)
  *               chapterNumber:
- *                 type: number
- *                 description: Chapter number to generate
- *                 example: 1
+ *                 type: integer
+ *                 description: Current chapter number being generated
+ *               totalChapters:
+ *                 type: integer
+ *                 description: Total number of chapters planned for the story
+ *               wordsPerChapter:
+ *                 type: integer
+ *                 description: Approximate number of words per chapter
+ *               customizations:
+ *                 type: object
+ *                 properties:
+ *                   tone:
+ *                     type: string
+ *                     enum: [dramatic, mysterious, emotional, cinematic, traditional]
+ *                   style:
+ *                     type: string
+ *                     enum: [viral, educational, entertainment, cultural]
+ *                   targetAudience:
+ *                     type: string
+ *                     enum: [children, adults, family, teens]
  *     responses:
- *       200:
+ *       201:
  *         description: Chapter generated successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Chapter'
+ *       400:
+ *         description: Bad request
  *       404:
  *         description: Story not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       400:
- *         description: Chapter number exceeds target chapters
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Not authenticated
  */
-router.post("/:storyId/chapters", authController_1.protectedRoute, storyController_1.generateStoryChapter);
+router.post("/chapters", authController_1.protectedRoute, storyController_1.generateChapterController);
+/**
+ * @swagger
+ * /api/story/fullStory/{storyId}:
+ *   get:
+ *     summary: Get a full story (with chapters)
+ *     tags: [Stories]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: storyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Story ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for chapters
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of chapters per page
+ *     responses:
+ *       200:
+ *         description: Story with chapters retrieved successfully
+ *       404:
+ *         description: Story not found
+ *       401:
+ *         description: Not authenticated
+ */
+router.get("/fullStory/:storyId", authController_1.protectedRoute, storyController_1.getFullStory);
+/**
+ * @swagger
+ * /api/story:
+ *   get:
+ *     summary: Get all stories for the authenticated user
+ *     tags: [Stories]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Stories retrieved successfully
+ *       401:
+ *         description: Not authenticated
+ */
+router.get("/", authController_1.protectedRoute, storyController_1.getStoryUserById);
 /**
  * @swagger
  * /api/story/{storyId}/chapters/{chapterNumber}/image-prompts:
@@ -151,9 +155,9 @@ router.post("/:storyId/chapters", authController_1.protectedRoute, storyControll
 router.post("/:storyId/chapters/:chapterNumber/image-prompts", authController_1.protectedRoute, storyController_1.generateChapterImagePrompts);
 /**
  * @swagger
- * /api/story/{storyId}/metadata/description:
+ * /api/story/{storyId}/viral-title:
  *   post:
- *     summary: Generate YouTube description and synopsis
+ *     summary: Generate a single viral YouTube title for a story
  *     tags: [Stories]
  *     security:
  *       - bearerAuth: []
@@ -167,392 +171,209 @@ router.post("/:storyId/chapters/:chapterNumber/image-prompts", authController_1.
  *         description: Story ID
  *     responses:
  *       200:
- *         description: Description generated successfully
+ *         description: Viral title generated successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 description:
+ *                 success:
+ *                   type: boolean
+ *                 message:
  *                   type: string
- *                   description: YouTube video description
- *       404:
- *         description: Story not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-router.post("/:storyId/metadata/description", authController_1.protectedRoute, storyController_1.generateStoryDescription);
-/**
- * @swagger
- * /api/story/{storyId}/metadata/titles:
- *   post:
- *     summary: Generate SEO-optimized YouTube titles
- *     tags: [Stories]
- *     security:
- *       - bearerAuth: []
- *       - cookieAuth: []
- *     parameters:
- *       - in: path
- *         name: storyId
- *         required: true
- *         schema:
- *           type: string
- *         description: Story ID
- *     responses:
- *       200:
- *         description: Titles generated successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 titles:
- *                   type: array
- *                   items:
- *                     type: string
- *                   description: Array of SEO-optimized titles
- *       404:
- *         description: Story not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-router.post("/:storyId/metadata/titles", authController_1.protectedRoute, storyController_1.generateStoryTitles);
-/**
- * @swagger
- * /api/story/{storyId}/metadata/thumbnail:
- *   post:
- *     summary: Generate thumbnail prompt
- *     tags: [Stories]
- *     security:
- *       - bearerAuth: []
- *       - cookieAuth: []
- *     parameters:
- *       - in: path
- *         name: storyId
- *         required: true
- *         schema:
- *           type: string
- *         description: Story ID
- *     responses:
- *       200:
- *         description: Thumbnail prompt generated successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 thumbnailPrompt:
- *                   type: string
- *                   description: AI-generated thumbnail prompt
- *       404:
- *         description: Story not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-router.post("/:storyId/metadata/thumbnail", authController_1.protectedRoute, storyController_1.generateStoryThumbnail);
-/**
- * @swagger
- * /api/story:
- *   get:
- *     summary: Get user stories with pagination and filtering
- *     tags: [Stories]
- *     security:
- *       - bearerAuth: []
- *       - cookieAuth: []
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *         description: Page number for pagination
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *         description: Number of stories per page
- *       - in: query
- *         name: status
- *         schema:
- *           type: string
- *           enum: [in_progress, chapters_complete, assets_complete]
- *         description: Filter by story status
- *       - in: query
- *         name: search
- *         schema:
- *           type: string
- *         description: Search in story prompt and chapter titles
- *       - in: query
- *         name: sortBy
- *         schema:
- *           type: string
- *           default: createdAt
- *         description: Field to sort by
- *       - in: query
- *         name: sortOrder
- *         schema:
- *           type: string
- *           enum: [asc, desc]
- *           default: desc
- *         description: Sort order
- *     responses:
- *       200:
- *         description: Stories retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 stories:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Story'
- *                 pagination:
+ *                 data:
  *                   type: object
  *                   properties:
- *                     currentPage:
- *                       type: integer
- *                     totalPages:
- *                       type: integer
- *                     totalStories:
- *                       type: integer
- *                     hasNextPage:
- *                       type: boolean
- *                     hasPrevPage:
- *                       type: boolean
+ *                     storyId:
+ *                       type: string
+ *                     viralTitle:
+ *                       type: string
+ *                     updatedStory:
+ *                       $ref: '#/components/schemas/Story'
+ *       404:
+ *         description: Story not found
  *       401:
  *         description: Not authenticated
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
-router.get("/", authController_1.protectedRoute, storyController_1.getUserStories);
+router.post("/:storyId/viral-title", authController_1.protectedRoute, storyController_1.generateViralTitle);
 /**
  * @swagger
- * /api/story/{id}:
- *   get:
- *     summary: Get a specific story by ID
+ * /api/story/{storyId}/viral-description:
+ *   post:
+ *     summary: Generate a single viral YouTube description for a story
  *     tags: [Stories]
  *     security:
  *       - bearerAuth: []
  *       - cookieAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: storyId
  *         required: true
  *         schema:
  *           type: string
  *         description: Story ID
  *     responses:
  *       200:
- *         description: Story retrieved successfully
+ *         description: Viral description generated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Story'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     storyId:
+ *                       type: string
+ *                     viralDescription:
+ *                       type: string
+ *                     updatedStory:
+ *                       $ref: '#/components/schemas/Story'
  *       404:
  *         description: Story not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       401:
  *         description: Not authenticated
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
-router.get("/:id", authController_1.protectedRoute, storyController_1.getStoryById);
+router.post("/:storyId/viral-description", authController_1.protectedRoute, storyController_1.generateViralDescription);
 /**
  * @swagger
- * /api/story/stats:
- *   get:
- *     summary: Get user story statistics
- *     tags: [Stories]
- *     security:
- *       - bearerAuth: []
- *       - cookieAuth: []
- *     responses:
- *       200:
- *         description: Story statistics retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 totalStories:
- *                   type: integer
- *                   description: Total number of stories
- *                 totalWords:
- *                   type: integer
- *                   description: Total words across all stories
- *                 totalChapters:
- *                   type: integer
- *                   description: Total chapters across all stories
- *                 completedStories:
- *                   type: integer
- *                   description: Number of completed stories
- *                 inProgressStories:
- *                   type: integer
- *                   description: Number of in-progress stories
- *                 chaptersCompleteStories:
- *                   type: integer
- *                   description: Number of stories with chapters complete
- *       401:
- *         description: Not authenticated
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-router.get("/stats", authController_1.protectedRoute, storyController_1.getUserStoryStats);
-/**
- * @swagger
- * /api/story/search:
- *   get:
- *     summary: Search user stories
- *     tags: [Stories]
- *     security:
- *       - bearerAuth: []
- *       - cookieAuth: []
- *     parameters:
- *       - in: query
- *         name: q
- *         schema:
- *           type: string
- *         description: Search query
- *       - in: query
- *         name: status
- *         schema:
- *           type: string
- *           enum: [in_progress, chapters_complete, assets_complete]
- *         description: Filter by status
- *       - in: query
- *         name: dateFrom
- *         schema:
- *           type: string
- *           format: date
- *         description: Filter stories from this date
- *       - in: query
- *         name: dateTo
- *         schema:
- *           type: string
- *           format: date
- *         description: Filter stories to this date
- *       - in: query
- *         name: sortBy
- *         schema:
- *           type: string
- *           default: createdAt
- *         description: Field to sort by
- *       - in: query
- *         name: sortOrder
- *         schema:
- *           type: string
- *           enum: [asc, desc]
- *           default: desc
- *         description: Sort order
- *     responses:
- *       200:
- *         description: Search results retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 stories:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Story'
- *                 totalResults:
- *                   type: integer
- *                 searchQuery:
- *                   type: string
- *       401:
- *         description: Not authenticated
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-router.get("/search", authController_1.protectedRoute, storyController_1.searchUserStories);
-/**
- * @swagger
- * /api/story/status/{status}:
- *   get:
- *     summary: Get stories by status
+ * /api/story/{storyId}/thumbnail-prompts:
+ *   post:
+ *     summary: Generate viral thumbnail prompts for a story
  *     tags: [Stories]
  *     security:
  *       - bearerAuth: []
  *       - cookieAuth: []
  *     parameters:
  *       - in: path
- *         name: status
+ *         name: storyId
  *         required: true
  *         schema:
  *           type: string
- *           enum: [in_progress, chapters_complete, assets_complete]
- *         description: Story status
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *         description: Page number for pagination
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *         description: Number of stories per page
+ *         description: Story ID
  *     responses:
  *       200:
- *         description: Stories retrieved successfully
+ *         description: Thumbnail prompts generated successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 stories:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Story'
- *                 status:
+ *                 success:
+ *                   type: boolean
+ *                 message:
  *                   type: string
- *                 pagination:
+ *                 data:
  *                   type: object
  *                   properties:
- *                     currentPage:
- *                       type: integer
- *                     totalPages:
- *                       type: integer
- *                     totalStories:
- *                       type: integer
- *                     hasNextPage:
- *                       type: boolean
- *                     hasPrevPage:
- *                       type: boolean
- *       400:
- *         description: Invalid status
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *                     storyId:
+ *                       type: string
+ *                     thumbnailPrompt:
+ *                       type: string
+ *                     updatedStory:
+ *                       $ref: '#/components/schemas/Story'
+ *       404:
+ *         description: Story not found
  *       401:
  *         description: Not authenticated
+ */
+router.post("/:storyId/thumbnail-prompts", authController_1.protectedRoute, storyController_1.generateViralThumbnailPrompts);
+/**
+ * @swagger
+ * /api/story/{storyId}/shorts-hooks:
+ *   post:
+ *     summary: Generate viral YouTube Shorts hooks for a story
+ *     tags: [Stories]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: storyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Story ID
+ *     responses:
+ *       200:
+ *         description: Shorts hooks generated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Error'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     storyId:
+ *                       type: string
+ *                     shortsHooks:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     updatedStory:
+ *                       $ref: '#/components/schemas/Story'
+ *       404:
+ *         description: Story not found
+ *       401:
+ *         description: Not authenticated
  */
-router.get("/status/:status", authController_1.protectedRoute, storyController_1.getStoriesByStatus);
+router.post("/:storyId/shorts-hooks", authController_1.protectedRoute, storyController_1.generateViralShortsHooks);
+/**
+ * @swagger
+ * /api/story/{storyId}/seo-keywords:
+ *   post:
+ *     summary: Generate SEO keywords and hashtags for a story
+ *     tags: [Stories]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: storyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Story ID
+ *     responses:
+ *       200:
+ *         description: SEO keywords and hashtags generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     storyId:
+ *                       type: string
+ *                     keywords:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     hashtags:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     updatedStory:
+ *                       $ref: '#/components/schemas/Story'
+ *       404:
+ *         description: Story not found
+ *       401:
+ *         description: Not authenticated
+ */
+router.post("/:storyId/seo-keywords", authController_1.protectedRoute, storyController_1.generateSEOKeywords);
 exports.default = router;

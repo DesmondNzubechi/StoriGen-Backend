@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -24,31 +15,31 @@ if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_CALLBACK_URL) {
 passport_1.default.serializeUser((user, done) => {
     done(null, user.id);
 });
-passport_1.default.deserializeUser((id, done) => __awaiter(void 0, void 0, void 0, function* () {
+passport_1.default.deserializeUser(async (id, done) => {
     try {
-        const user = yield userModel_1.default.findById(id);
+        const user = await userModel_1.default.findById(id);
         done(null, user);
     }
     catch (error) {
         done(error, null);
     }
-}));
+});
 // Google Strategy
 passport_1.default.use(new passport_google_oauth20_1.Strategy({
     clientID: GOOGLE_CLIENT_ID,
     clientSecret: GOOGLE_CLIENT_SECRET,
     callbackURL: GOOGLE_CALLBACK_URL,
     proxy: true,
-}, (accessToken, refreshToken, profile, done) => __awaiter(void 0, void 0, void 0, function* () {
+}, async (accessToken, refreshToken, profile, done) => {
     var _a, _b;
     try {
         // Check if user already exists by email
-        let user = yield userModel_1.default.findOne({ email: profile.emails[0].value });
+        let user = await userModel_1.default.findOne({ email: profile.emails[0].value });
         if (!user) {
             // Generate a single secure random password for both fields
             const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
             // Create new user if doesn't exist
-            user = yield userModel_1.default.create({
+            user = await userModel_1.default.create({
                 email: profile.emails[0].value,
                 fullName: profile.displayName,
                 password: randomPassword,
@@ -62,7 +53,7 @@ passport_1.default.use(new passport_google_oauth20_1.Strategy({
         else if (!user.googleId) {
             // Link Google account if user exists but hasn't linked Google
             user.googleId = profile.id;
-            yield user.save();
+            await user.save();
         }
         else if (user.googleId !== profile.id) {
             // This should not happen, but handle it gracefully
@@ -73,5 +64,5 @@ passport_1.default.use(new passport_google_oauth20_1.Strategy({
     catch (error) {
         return done(error, undefined);
     }
-})));
+}));
 exports.default = passport_1.default;

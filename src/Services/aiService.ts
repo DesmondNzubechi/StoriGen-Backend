@@ -30,12 +30,12 @@ export interface PromptCustomization {
 interface MotivationCustomization {
   typeOfMotivation: string; // e.g. "Fitness Motivation"
   theme: string;            // e.g. "Discipline"
-  targetWord?: string;      // e.g. "consistency"
+  targetWord: number;      // e.g. "consistency"
 }
 
 export class AIService {
 //generate motivational speech
-    static async generateMotivationalSpeech(
+ static async generateMotivationalSpeech(
     customizations: MotivationCustomization
   ): Promise<{
     title: string;
@@ -45,49 +45,56 @@ export class AIService {
     imagePrompts: string[];
   }> {
     const { typeOfMotivation, theme, targetWord } = customizations;
+    const targetLength = targetWord || 200; // default ~200 words
 
-    const target = targetWord || "success";
-
-    // 🧠 Prompt carefully crafted for motivational scripts
+    // Prompt designed for viral motivational shorts
     const prompt = `
-Generate a powerful motivational script focused on the following details:
+Generate a **viral motivational script** using the following details:
 
 Type of motivation: ${typeOfMotivation}
 Theme: ${theme}
-Target word or message: ${target}
+Target length: Around ${targetLength} words
 
 Requirements:
-1. The speech should sound cinematic, emotionally charged, and realistic — like something you'd hear in a viral motivational short.
-2. Structure the script into 3–5 short paragraphs (each representing a distinct emotional beat).
-3. Each paragraph should be vivid, direct, and relatable to the chosen theme and motivation type.
-4. After writing the full script, provide:
-   - A viral YouTube-style title (inspirational and short)
-   - A short caption for TikTok/YouTube description
-   - 5–7 relevant hashtags
-   - 1 short image prompt per paragraph (for AI image generation — match mood and emotion)
+1. Start with a **hook** — a bold, emotional first line that immediately grabs the viewer's attention.
+2. Structure the script into **3–5 short, powerful paragraphs**, each representing an emotional or mental shift.
+3. End with a **strong outro** that feels complete and motivating — then finish with a **social CTA** that says:
+   “Follow us for more daily motivation. Like, comment, and share this video if it inspired you.”
+4. The tone must be **cinematic, emotional, realistic**, and relatable.
+5. Stay close to the ${targetLength}-word count.
+6. After the script, also provide:
+   - A **viral-style title** (short and catchy)
+   - A **short caption** for TikTok/YouTube description (1–2 sentences)
+   - **5–7 relevant hashtags**
+   - **1 image prompt per paragraph**, describing what visuals would match each moment emotionally.
 
-Format the response as:
+Format your response **exactly** like this:
+
 Title:
-<your generated title>
+<generated title>
 
 Caption:
 <caption>
 
 Hashtags:
-<comma separated hashtags>
+<comma-separated hashtags>
 
 Script:
-<paragraph 1>
+<paragraph 1 - starts with hook>
 <paragraph 2>
-<paragraph 3> (and so on)
+<paragraph 3>
+<paragraph 4 (optional)>
+<paragraph 5 (optional) - ends with outro + CTA>
 
 Image Prompts:
-1. <prompt for paragraph 1>
-2. <prompt for paragraph 2>
-3. <prompt for paragraph 3>
+1. <image prompt for paragraph 1>
+2. <image prompt for paragraph 2>
+3. <image prompt for paragraph 3>
+4. <image prompt for paragraph 4 (if any)>
+5. <image prompt for paragraph 5 (if any)>
 `;
 
-    // Call OpenAI model
+    // 🔥 Call OpenAI model
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
@@ -96,7 +103,7 @@ Image Prompts:
 
     const rawOutput = response.choices[0]?.message?.content || "";
 
-    // 🪄 Parse response intelligently
+    // 🧩 Parse structured response
     const titleMatch = rawOutput.match(/Title:\s*(.*)/i);
     const captionMatch = rawOutput.match(/Caption:\s*([\s\S]*?)\n\s*Hashtags:/i);
     const hashtagsMatch = rawOutput.match(/Hashtags:\s*(.*)/i);
@@ -104,13 +111,15 @@ Image Prompts:
     const imagePromptsMatch = rawOutput.match(/Image Prompts:\s*([\s\S]*)/i);
 
     const title = titleMatch?.[1]?.trim() || "Untitled Motivation";
-    const caption = captionMatch?.[1]?.trim() || "Stay motivated.";
-    const hashTag = hashtagsMatch?.[1]?.trim() || "#Motivation #Mindset #Discipline";
+    const caption = captionMatch?.[1]?.trim() || "Stay inspired, stay driven.";
+    const hashTag =
+      hashtagsMatch?.[1]?.trim() ||
+      "#Motivation #Mindset #Discipline #Success #NeverGiveUp";
     const content = scriptMatch?.[1]?.trim() || rawOutput;
     const imagePrompts = imagePromptsMatch
       ? imagePromptsMatch[1]
           .split(/\n\d+\.\s*/)
-          .map((item) => item.trim())
+          .map((item) => item.trim()) 
           .filter(Boolean)
       : [];
 

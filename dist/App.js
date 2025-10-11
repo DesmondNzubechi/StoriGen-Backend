@@ -10,6 +10,9 @@ const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
 const swagger_1 = require("./config/swagger");
 const storyRoutes_1 = __importDefault(require("./Routes/storyRoutes"));
 const authRoute_1 = __importDefault(require("./Routes/authRoute"));
+const ideas_1 = __importDefault(require("./Routes/ideas"));
+const shortsRoute_1 = __importDefault(require("./Routes/shortsRoute"));
+const summaries_1 = __importDefault(require("./Routes/summaries"));
 const errorController_1 = __importDefault(require("./errors/errorController"));
 const dotenv_1 = require("dotenv");
 (0, dotenv_1.config)({ path: "./config.env" });
@@ -20,7 +23,7 @@ if (!ORIGIN_URL) {
 const app = (0, express_1.default)();
 // CORS configuration
 const corsOptions = {
-    origin: [ORIGIN_URL, 'http://localhost:3000', 'http://localhost:8080'],
+    origin: [ORIGIN_URL, 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:8080'],
     credentials: true,
     methods: "GET,POST,DELETE,PATCH",
     allowedHeaders: "Content-Type, Authorization, api_key",
@@ -37,7 +40,10 @@ app.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.de
     customSiteTitle: 'StoriGen API Documentation'
 }));
 app.use("/api/story", storyRoutes_1.default);
+app.use('/api/summaries', summaries_1.default);
 app.use("/api/v1/auth", authRoute_1.default);
+app.use('/api/ideas', ideas_1.default);
+app.use('/api/shorts', shortsRoute_1.default);
 // Root route
 app.get('/', (req, res) => {
     res.json({ message: "StoriGen API is running!" });

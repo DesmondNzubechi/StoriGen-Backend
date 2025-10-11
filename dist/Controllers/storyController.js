@@ -1,389 +1,594 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getStoriesByStatus = exports.searchUserStories = exports.getUserStoryStats = exports.getStoryById = exports.getUserStories = exports.generateStoryThumbnail = exports.generateStoryTitles = exports.generateStoryDescription = exports.generateChapterImagePrompts = exports.generateStoryChapter = exports.initStory = void 0;
+exports.generateChapterImagePrompts = exports.generateSEOKeywords = exports.generateViralShortsHooks = exports.generateViralThumbnailPrompts = exports.generateViralDescription = exports.generateViralTitle = exports.updateScript = exports.getStoryUserById = exports.getFullStory = exports.generateChapterController = void 0;
 const storyModel_1 = require("../Models/storyModel");
 const aiService_1 = require("../Services/aiService");
-// ==========================
-// INIT STORY
-// ==========================
-const initStory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+const verifyTokenAndGetUser_1 = require("../utils/verifyTokenAndGetUser");
+const appError_1 = require("../errors/appError");
+const generateChapterController = async (req, res, next) => {
     try {
-        const { prompt, targetWords, targetChapters } = req.body;
-        if (!prompt || !targetWords || !targetChapters) {
-            return res.status(400).json({ message: "Missing required fields" });
+        const { storyId, summary, chapterNumber, totalChapters, wordsPerChapter, customizations = {} } = req.body;
+        if (!chapterNumber || !totalChapters) {
+            return res.status(400).json({
+                success: false,
+                message: "chapterNumber and totalChapters are required",
+            });
         }
-        // Generate outline
-        const outline = yield (0, aiService_1.generateOutline)(prompt, targetWords, targetChapters);
-        // Create new story doc
-        const story = yield storyModel_1.Story.create({
-            user: (_a = req.user) === null || _a === void 0 ? void 0 : _a._id,
-            prompt,
-            targetWords,
-            targetChapters,
-            outline,
-            chapters: [],
-            youtubeAssets: {},
-            status: "in_progress",
-        });
-        res.status(201).json(story);
-    }
-    catch (error) {
-        res.status(500).json({ message: "Error initializing story", error: error.message });
-    }
-});
-exports.initStory = initStory;
-// ==========================
-// GENERATE CHAPTER
-// ==========================
-const generateStoryChapter = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { storyId } = req.params;
-        const { chapterNumber } = req.body;
-        const story = yield storyModel_1.Story.findById(storyId);
-        if (!story)
-            return res.status(404).json({ message: "Story not found" });
-        if (chapterNumber > story.targetChapters) {
-            return res.status(400).json({ message: "Chapter number exceeds targetChapters" });
+        const token = req.cookies.jwt;
+        if (!token) {
+            return next(new appError_1.AppError("You are not authorised to access this route", 401));
         }
-        const chapterText = yield (0, aiService_1.generateChapter)(story.outline || "", chapterNumber, story.targetChapters, story.targetWords);
-        // Split chapter into paragraphs
-        const paragraphs = chapterText
-            .split("\n\n")
-            .map((p) => p.trim())
-            .filter(Boolean)
-            .map((p) => ({ text: p }));
-        const newChapter = {
-            number: chapterNumber,
-            title: `Chapter ${chapterNumber}`,
-            text: chapterText,
-            paragraphs,
-        };
-        story.chapters.push(newChapter);
-        yield story.save();
-        res.json(newChapter);
-    }
-    catch (error) {
-        res.status(500).json({ message: "Error generating chapter", error: error.message });
-    }
-});
-exports.generateStoryChapter = generateStoryChapter;
-// ==========================
-// GENERATE IMAGE PROMPTS (PER PARAGRAPH)
-// ==========================
-const generateChapterImagePrompts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { storyId, chapterNumber } = req.params;
-        const story = yield storyModel_1.Story.findById(storyId);
-        if (!story)
-            return res.status(404).json({ message: "Story not found" });
-        const chapter = story.chapters.find((c) => c.number === Number(chapterNumber));
-        if (!chapter)
-            return res.status(404).json({ message: "Chapter not found" });
-        // Generate image prompts for each paragraph
-        for (let i = 0; i < chapter.paragraphs.length; i++) {
-            const imagePrompt = yield (0, aiService_1.generateImagePrompts)(chapter.paragraphs[i].text, story.prompt);
-            chapter.paragraphs[i].imagePrompt = imagePrompt;
-        }
-        yield story.save();
-        res.json(chapter.paragraphs);
-    }
-    catch (error) {
-        res.status(500).json({ message: "Error generating image prompts", error: error.message });
-    }
-});
-exports.generateChapterImagePrompts = generateChapterImagePrompts;
-// ==========================
-// GENERATE DESCRIPTION
-// ==========================
-const generateStoryDescription = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { storyId } = req.params;
-        const story = yield storyModel_1.Story.findById(storyId);
-        if (!story)
-            return res.status(404).json({ message: "Story not found" });
-        const fullStory = story.chapters.map((c) => c.text).join("\n\n");
-        const description = yield (0, aiService_1.generateDescription)(fullStory);
-        story.youtubeAssets.description = description;
-        yield story.save();
-        res.json({ description });
-    }
-    catch (error) {
-        res.status(500).json({ message: "Error generating description", error: error.message });
-    }
-});
-exports.generateStoryDescription = generateStoryDescription;
-// ==========================
-// GENERATE TITLES
-// ==========================
-const generateStoryTitles = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { storyId } = req.params;
-        const story = yield storyModel_1.Story.findById(storyId);
-        if (!story)
-            return res.status(404).json({ message: "Story not found" });
-        const fullStory = story.chapters.map((c) => c.text).join("\n\n");
-        const titlesRaw = yield (0, aiService_1.generateTitles)(fullStory);
-        const titles = titlesRaw
-            .split(/\n|\r|\r\n/g)
-            .map((t) => t.replace(/^[-*\d\.\)\s]+/, "").trim())
-            .filter(Boolean);
-        story.youtubeAssets.titles = titles;
-        yield story.save();
-        res.json({ titles });
-    }
-    catch (error) {
-        res.status(500).json({ message: "Error generating titles", error: error.message });
-    }
-});
-exports.generateStoryTitles = generateStoryTitles;
-// ==========================
-// GENERATE THUMBNAIL PROMPT
-// ==========================
-const generateStoryThumbnail = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { storyId } = req.params;
-        const story = yield storyModel_1.Story.findById(storyId);
-        if (!story)
-            return res.status(404).json({ message: "Story not found" });
-        const fullStory = story.chapters.map((c) => c.text).join("\n\n");
-        const thumbnailPrompt = yield (0, aiService_1.generateThumbnailPrompt)(fullStory);
-        story.youtubeAssets.thumbnailPrompt = thumbnailPrompt;
-        // Final update → assets_complete
-        story.status = "assets_complete";
-        yield story.save();
-        res.json({ thumbnailPrompt });
-    }
-    catch (error) {
-        res.status(500).json({ message: "Error generating thumbnail prompt", error: error.message });
-    }
-});
-exports.generateStoryThumbnail = generateStoryThumbnail;
-// ==========================
-// FETCH USER STORIES WITH PAGINATION
-// ==========================
-const getUserStories = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _b;
-    try {
-        const userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b._id;
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const status = req.query.status;
-        const search = req.query.search;
-        const sortBy = req.query.sortBy || 'createdAt';
-        const sortOrder = req.query.sortOrder || 'desc';
-        // Build filter object
-        const filter = { user: userId };
-        if (status) {
-            filter.status = status;
-        }
-        if (search) {
-            filter.$or = [
-                { prompt: { $regex: search, $options: 'i' } },
-                { 'chapters.title': { $regex: search, $options: 'i' } }
-            ];
-        }
-        // Build sort object
-        const sort = {};
-        sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
-        // Calculate pagination
-        const skip = (page - 1) * limit;
-        // Execute query with pagination
-        const stories = yield storyModel_1.Story.find(filter)
-            .sort(sort)
-            .skip(skip)
-            .limit(limit)
-            .select('-chapters.paragraphs.imagePrompt'); // Exclude image prompts for list view
-        // Get total count for pagination
-        const totalStories = yield storyModel_1.Story.countDocuments(filter);
-        const totalPages = Math.ceil(totalStories / limit);
-        res.json({
-            stories,
-            pagination: {
-                currentPage: page,
-                totalPages,
-                totalStories,
-                hasNextPage: page < totalPages,
-                hasPrevPage: page > 1
+        const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
+        let story;
+        // If storyId exists → find the story
+        if (storyId) {
+            story = await storyModel_1.Story.findOne({ _id: storyId, user: user._id });
+            if (!story) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Story not found",
+                });
             }
+        }
+        else {
+            // Must be first chapter to create new story
+            if (chapterNumber !== 1) {
+                return res.status(400).json({
+                    success: false,
+                    message: "You must start with Chapter 1 when creating a new story",
+                });
+            }
+            if (!summary) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Summary is required when creating a new story",
+                });
+            }
+            // Generate outline at creation
+            const outline = await aiService_1.AIService.generateOutline(summary, totalChapters);
+            if (!outline) {
+                return res.status(400).json({
+                    success: false,
+                    message: "outline is required when creating a new story",
+                });
+            }
+            console.log("The outline", outline);
+            story = await storyModel_1.Story.create({
+                user: user._id,
+                prompt: summary, // Using summary as prompt since prompt is required
+                targetWords: wordsPerChapter * totalChapters, // Calculate total words
+                totalChapters: totalChapters,
+                summary,
+                outline,
+                chapters: [],
+                status: "in_progress",
+            });
+        }
+        // ✅ Enforce sequential generation
+        if (chapterNumber > 1) {
+            const previousChapterExists = story.chapters.some(ch => ch.number === chapterNumber - 1);
+            if (!previousChapterExists) {
+                return res.status(400).json({
+                    success: false,
+                    message: `You must generate Chapter ${chapterNumber - 1} before generating Chapter ${chapterNumber}.`,
+                });
+            }
+        }
+        // Prevent duplicates
+        if (story.chapters.some(ch => ch.number === chapterNumber)) {
+            return res.status(400).json({
+                success: false,
+                message: `Chapter ${chapterNumber} already exists.`,
+            });
+        }
+        // Get outline item for this chapter
+        const outlineItem = story === null || story === void 0 ? void 0 : story.outline[chapterNumber - 1];
+        if (!outlineItem) {
+            return res.status(400).json({
+                success: false,
+                message: `Outline for Chapter ${chapterNumber} not found.`,
+            });
+        }
+        // Prepare previous chapters for continuity
+        const previousChapters = story.chapters
+            .sort((a, b) => a.number - b.number)
+            .map(ch => ({
+            number: ch.number,
+            title: ch.title,
+            content: ch.content
+        }));
+        // Generate chapter
+        const chapter = await aiService_1.AIService.generateChapter(story.summary, chapterNumber, story.totalChapters, (outlineItem === null || outlineItem === void 0 ? void 0 : outlineItem.description) || `Chapter ${chapterNumber} storyline continuation`, // Pass the description string instead of the whole object
+        {
+            previousChapters,
+            wordsPerChapter,
+            ...customizations
+        });
+        console.log("The chapter is here", chapter);
+        // Append chapter
+        story.chapters.push({
+            number: chapterNumber,
+            title: chapter.title,
+            content: chapter.content,
+            wordCount: chapter.wordCount,
+            paragraphs: chapter.paragraphs
+        });
+        // Mark completed if last chapter
+        if (chapterNumber === story.totalChapters) {
+            story.status = "completed";
+        }
+        await story.save();
+        res.status(201).json({
+            success: true,
+            data: {
+                storyId: story._id,
+                chapter,
+            },
         });
     }
     catch (error) {
-        res.status(500).json({ message: "Error fetching user stories", error: error.message });
-    }
-});
-exports.getUserStories = getUserStories;
-// ==========================
-// FETCH ONE STORY BY ID (WITH USER VALIDATION)
-// ==========================
-const getStoryById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _c;
-    try {
-        const userId = (_c = req.user) === null || _c === void 0 ? void 0 : _c._id;
-        const storyId = req.params.id;
-        const story = yield storyModel_1.Story.findOne({
-            _id: storyId,
-            user: userId
+        res.status(500).json({
+            success: false,
+            message: "Error generating chapter",
+            error: error.message,
         });
+    }
+};
+exports.generateChapterController = generateChapterController;
+/**
+ * Get all chapters for a script
+ */
+const getFullStory = async (req, res, next) => {
+    try {
+        const { storyId } = req.params;
+        const { page = 1, limit = 10 } = req.query;
+        // Check token
+        const token = req.cookies.jwt;
+        if (!token) {
+            return next(new appError_1.AppError("You are not authorised to access this route", 401));
+        }
+        const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
+        if (!user)
+            return;
+        // Find the story with chapters
+        const story = await storyModel_1.Story.findOne({ _id: storyId, user: user._id });
         if (!story) {
             return res.status(404).json({
-                message: "Story not found or you don't have permission to access it"
+                success: false,
+                message: "Story not found",
             });
         }
-        res.json(story);
+        // Pagination for chapters (optional)
+        const skip = (Number(page) - 1) * Number(limit);
+        const total = story.chapters.length;
+        const paginatedChapters = story.chapters
+            .sort((a, b) => a.number - b.number)
+            .slice(skip, skip + Number(limit));
+        res.status(200).json({
+            success: true,
+            data: {
+                story: {
+                    _id: story._id,
+                    prompt: story.prompt,
+                    summary: story.summary,
+                    outline: story.outline,
+                    targetWords: story.targetWords,
+                    targetChapters: story.totalChapters,
+                    characterProfile: story.characterProfile,
+                    youtubeAssets: story.youtubeAssets,
+                    status: story.status,
+                    chapterImagePrompts: story.chapterImagePrompts,
+                    createdAt: story.createdAt,
+                    updatedAt: story.updatedAt,
+                    chapters: paginatedChapters,
+                },
+                pagination: {
+                    currentPage: Number(page),
+                    totalPages: Math.ceil(total / Number(limit)),
+                    totalItems: total,
+                    hasNextPage: Number(page) < Math.ceil(total / Number(limit)),
+                    hasPrevPage: Number(page) > 1,
+                },
+            },
+        });
     }
     catch (error) {
-        res.status(500).json({ message: "Error fetching story", error: error.message });
+        res.status(500).json({
+            success: false,
+            message: "Error fetching story",
+            error: error.message,
+        });
     }
-});
-exports.getStoryById = getStoryById;
-// ==========================
-// FETCH USER STORY STATISTICS
-// ==========================
-const getUserStoryStats = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _d;
+};
+exports.getFullStory = getFullStory;
+/**
+ * Get a story by ID
+ */
+const getStoryUserById = async (req, res, next) => {
     try {
-        const userId = (_d = req.user) === null || _d === void 0 ? void 0 : _d._id;
-        const stats = yield storyModel_1.Story.aggregate([
-            { $match: { user: userId } },
-            {
-                $group: {
-                    _id: null,
-                    totalStories: { $sum: 1 },
-                    totalWords: { $sum: '$targetWords' },
-                    totalChapters: { $sum: { $size: '$chapters' } },
-                    completedStories: {
-                        $sum: {
-                            $cond: [{ $eq: ['$status', 'assets_complete'] }, 1, 0]
-                        }
-                    },
-                    inProgressStories: {
-                        $sum: {
-                            $cond: [{ $eq: ['$status', 'in_progress'] }, 1, 0]
-                        }
-                    },
-                    chaptersCompleteStories: {
-                        $sum: {
-                            $cond: [{ $eq: ['$status', 'chapters_complete'] }, 1, 0]
-                        }
-                    }
-                }
+        const { storyId } = req.params;
+        const token = req.cookies.jwt;
+        if (!token) {
+            return next(new appError_1.AppError("You are not authorised to access this route", 401));
+        }
+        const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
+        if (!user)
+            return;
+        // Find story by ID & ownership
+        const story = await storyModel_1.Story.find({ user: user._id });
+        if (!story) {
+            return res.status(404).json({
+                success: false,
+                message: "Story not found for this particular user",
+            });
+        }
+        console.log("All my story", story);
+        res.status(200).json({
+            success: true,
+            data: story,
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error fetching story",
+            error: error.message,
+        });
+    }
+};
+exports.getStoryUserById = getStoryUserById;
+/**
+ * Update script settings
+ */
+const updateScript = async (req, res, next) => {
+    try {
+        const { summaryId } = req.params;
+        const { totalChapters, title } = req.body;
+        const token = req.cookies.jwt;
+        if (!token) {
+            return next(new appError_1.AppError("You are not authorised to access this route", 401));
+        }
+        const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
+        const script = await storyModel_1.Story.findOneAndUpdate({ summary: summaryId, user: user._id }, { targetChapters: totalChapters, title }, { new: true, runValidators: true }).populate('summary', 'title content');
+        if (!script) {
+            return res.status(404).json({
+                success: false,
+                message: 'Script not found'
+            });
+        }
+        res.status(200).json({
+            success: true,
+            data: { script }
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error updating script',
+            error: error.message
+        });
+    }
+};
+exports.updateScript = updateScript;
+//GENERATE STORY TITLE
+// === Generate Single Viral Title ===
+const generateViralTitle = async (req, res, next) => {
+    try {
+        const { storyId } = req.params;
+        // Check authentication
+        const token = req.cookies.jwt;
+        if (!token) {
+            return next(new appError_1.AppError("You are not authorised to access this route", 401));
+        }
+        const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
+        if (!user)
+            return;
+        // Find story and verify ownership
+        const story = await storyModel_1.Story.findOne({ _id: storyId, user: user._id });
+        if (!story) {
+            return res.status(404).json({
+                success: false,
+                message: "Story not found",
+            });
+        }
+        // Generate full story text for context
+        const fullStory = story.chapters.map(ch => ch.content).join("\n\n") || story.summary || story.prompt;
+        // Generate single viral title
+        const viralTitle = await aiService_1.AIService.generateViralTitle(fullStory);
+        // Update story - store in youtubeAssets.titles array (first element)
+        if (!story.youtubeAssets.titles) {
+            story.youtubeAssets.titles = [];
+        }
+        story.youtubeAssets.titles = [viralTitle];
+        await story.save();
+        res.status(200).json({
+            success: true,
+            message: "Viral title generated successfully",
+            data: {
+                storyId: story._id,
+                viralTitle: viralTitle,
+                updatedStory: story
             }
-        ]);
-        const result = stats[0] || {
-            totalStories: 0,
-            totalWords: 0,
-            totalChapters: 0,
-            completedStories: 0,
-            inProgressStories: 0,
-            chaptersCompleteStories: 0
+        });
+    }
+    catch (err) {
+        res.status(500).json({
+            success: false,
+            message: "Error generating viral title",
+            error: err.message
+        });
+    }
+};
+exports.generateViralTitle = generateViralTitle;
+// === Generate Viral Description ===
+const generateViralDescription = async (req, res, next) => {
+    try {
+        const { storyId } = req.params;
+        // Check authentication
+        const token = req.cookies.jwt;
+        if (!token) {
+            return next(new appError_1.AppError("You are not authorised to access this route", 401));
+        }
+        const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
+        if (!user)
+            return;
+        // Find story and verify ownership
+        const story = await storyModel_1.Story.findOne({ _id: storyId, user: user._id });
+        if (!story) {
+            return res.status(404).json({
+                success: false,
+                message: "Story not found",
+            });
+        }
+        // Generate full story text for AI context
+        const fullStory = story.chapters.map(ch => ch.content).join("\n\n") || story.summary || story.prompt;
+        // Generate description using AI service
+        const descriptionResponse = await aiService_1.AIService.generateDescription(fullStory);
+        // Clean and format response (optional)
+        const description = descriptionResponse.trim();
+        // Update story with new viral description
+        story.youtubeAssets.description = description;
+        await story.save();
+        res.status(200).json({
+            success: true,
+            message: "Viral description generated successfully",
+            data: {
+                storyId: story._id,
+                viralDescription: description,
+                updatedStory: story,
+            },
+        });
+    }
+    catch (err) {
+        res.status(500).json({
+            success: false,
+            message: "Error generating viral description",
+            error: err.message,
+        });
+    }
+};
+exports.generateViralDescription = generateViralDescription;
+// === Generate Viral Thumbnail Prompts ===
+const generateViralThumbnailPrompts = async (req, res, next) => {
+    try {
+        const { storyId } = req.params;
+        // Check authentication
+        const token = req.cookies.jwt;
+        if (!token) {
+            return next(new appError_1.AppError("You are not authorised to access this route", 401));
+        }
+        const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
+        if (!user)
+            return;
+        // Find story and verify ownership
+        const story = await storyModel_1.Story.findOne({ _id: storyId, user: user._id });
+        if (!story) {
+            return res.status(404).json({
+                success: false,
+                message: "Story not found",
+            });
+        }
+        // Generate full story text for context
+        const fullStory = story.chapters.map(ch => ch.content).join("\n\n") || story.summary || story.prompt;
+        // Generate thumbnail prompt
+        const thumbnailPrompt = await aiService_1.AIService.generateThumbnailPrompt(fullStory);
+        // Update story
+        story.youtubeAssets.thumbnailPrompt = thumbnailPrompt;
+        await story.save();
+        res.status(200).json({
+            success: true,
+            message: "Viral thumbnail prompt generated successfully",
+            data: {
+                storyId: story._id,
+                thumbnailPrompt: thumbnailPrompt,
+                updatedStory: story
+            }
+        });
+    }
+    catch (err) {
+        res.status(500).json({
+            success: false,
+            message: "Error generating thumbnail prompt",
+            error: err.message
+        });
+    }
+};
+exports.generateViralThumbnailPrompts = generateViralThumbnailPrompts;
+// === Generate Viral YouTube Shorts Hooks ===
+const generateViralShortsHooks = async (req, res, next) => {
+    try {
+        const { storyId } = req.params;
+        // Check authentication
+        const token = req.cookies.jwt;
+        if (!token) {
+            return next(new appError_1.AppError("You are not authorised to access this route", 401));
+        }
+        const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
+        if (!user)
+            return;
+        // Find story and verify ownership
+        const story = await storyModel_1.Story.findOne({ _id: storyId, user: user._id });
+        if (!story) {
+            return res.status(404).json({
+                success: false,
+                message: "Story not found",
+            });
+        }
+        // Generate full story text for context
+        const fullStory = story.chapters.map(ch => ch.content).join("\n\n") || story.summary || story.prompt;
+        // Generate shorts hooks
+        const hooksResponse = await aiService_1.AIService.generateShortsHooks(fullStory);
+        // Parse the response to extract individual hooks
+        const hooks = hooksResponse
+            .split(/\n|\r|\r\n/g)
+            .map((h) => h.replace(/^[-*\d\.\)\s]+/, "").trim())
+            .filter(Boolean)
+            .slice(0, 5); // Limit to 5 hooks
+        // Update story
+        story.youtubeAssets.shortsHooks = hooks;
+        await story.save();
+        res.status(200).json({
+            success: true,
+            message: "Viral shorts hooks generated successfully",
+            data: {
+                storyId: story._id,
+                shortsHooks: hooks,
+                updatedStory: story
+            }
+        });
+    }
+    catch (err) {
+        res.status(500).json({
+            success: false,
+            message: "Error generating shorts hooks",
+            error: err.message
+        });
+    }
+};
+exports.generateViralShortsHooks = generateViralShortsHooks;
+// === Generate SEO Keywords and Hashtags ===
+const generateSEOKeywords = async (req, res, next) => {
+    try {
+        const { storyId } = req.params;
+        // Check authentication
+        const token = req.cookies.jwt;
+        if (!token) {
+            return next(new appError_1.AppError("You are not authorised to access this route", 401));
+        }
+        const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
+        if (!user)
+            return;
+        // Find story and verify ownership
+        const story = await storyModel_1.Story.findOne({ _id: storyId, user: user._id });
+        if (!story) {
+            return res.status(404).json({
+                success: false,
+                message: "Story not found",
+            });
+        }
+        // Generate full story text for context
+        const fullStory = story.chapters.map(ch => ch.content).join("\n\n") || story.summary || story.prompt;
+        // Generate SEO keywords and hashtags
+        const seoResponse = await aiService_1.AIService.generateSEOKeywords(fullStory);
+        // Parse the response to extract keywords and hashtags
+        const lines = seoResponse.split(/\n|\r|\r\n/g).filter(Boolean);
+        // Extract keywords (usually listed first)
+        const keywords = lines
+            .filter(line => !line.includes('#') && line.trim().length > 0)
+            .map(line => line.replace(/^[-*\d\.\)\s]+/, "").trim())
+            .filter(Boolean)
+            .slice(0, 15); // Limit to 15 keywords
+        // Extract hashtags (lines starting with #)
+        const hashtags = lines
+            .filter(line => line.includes('#'))
+            .map(line => line.replace(/^[-*\d\.\)\s]+/, "").trim())
+            .filter(Boolean)
+            .slice(0, 10); // Limit to 10 hashtags
+        // Update story
+        story.youtubeAssets.hashtags = hashtags;
+        await story.save();
+        res.status(200).json({
+            success: true,
+            message: "SEO keywords and hashtags generated successfully",
+            data: {
+                storyId: story._id,
+                keywords: keywords,
+                hashtags: hashtags,
+                updatedStory: story
+            }
+        });
+    }
+    catch (err) {
+        res.status(500).json({
+            success: false,
+            message: "Error generating SEO keywords and hashtags",
+            error: err.message
+        });
+    }
+};
+exports.generateSEOKeywords = generateSEOKeywords;
+// === Generate Chapter Image Prompts ===
+const generateChapterImagePrompts = async (req, res, next) => {
+    try {
+        const { storyId, chapterNumber } = req.params;
+        // Check authentication
+        const token = req.cookies.jwt;
+        if (!token) {
+            return next(new appError_1.AppError("You are not authorised to access this route", 401));
+        }
+        const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
+        if (!user)
+            return;
+        // Find story and verify ownership
+        const story = await storyModel_1.Story.findOne({ _id: storyId, user: user._id });
+        if (!story) {
+            return res.status(404).json({
+                success: false,
+                message: "Story not found",
+            });
+        }
+        // Find the specific chapter
+        const chapter = story.chapters.find(ch => ch.number === parseInt(chapterNumber));
+        if (!chapter) {
+            return res.status(404).json({
+                success: false,
+                message: `Chapter ${chapterNumber} not found`,
+            });
+        }
+        // Generate image prompts for the chapter
+        const imagePromptsResponse = await aiService_1.AIService.generateImagePrompts(chapter.content, story.summary || story.prompt);
+        // Parse the response to extract individual prompts
+        const prompts = imagePromptsResponse
+            .split(/\n|\r|\r\n/g)
+            .map((p) => p.replace(/^[-*\d\.\)\s]+/, "").trim())
+            .filter(Boolean);
+        // Create chapter image prompts entry
+        const chapterImagePrompts = {
+            chapter: parseInt(chapterNumber),
+            prompts: prompts
         };
-        res.json(result);
-    }
-    catch (error) {
-        res.status(500).json({ message: "Error fetching story statistics", error: error.message });
-    }
-});
-exports.getUserStoryStats = getUserStoryStats;
-// ==========================
-// SEARCH USER STORIES
-// ==========================
-const searchUserStories = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _e;
-    try {
-        const userId = (_e = req.user) === null || _e === void 0 ? void 0 : _e._id;
-        const { q, status, dateFrom, dateTo, sortBy, sortOrder } = req.query;
-        // Build search filter
-        const filter = { user: userId };
-        if (q) {
-            filter.$or = [
-                { prompt: { $regex: q, $options: 'i' } },
-                { 'chapters.title': { $regex: q, $options: 'i' } },
-                { 'chapters.text': { $regex: q, $options: 'i' } }
-            ];
-        }
-        if (status) {
-            filter.status = status;
-        }
-        if (dateFrom || dateTo) {
-            filter.createdAt = {};
-            if (dateFrom)
-                filter.createdAt.$gte = new Date(dateFrom);
-            if (dateTo)
-                filter.createdAt.$lte = new Date(dateTo);
-        }
-        // Build sort object
-        const sort = {};
-        sort[sortBy || 'createdAt'] = sortOrder === 'asc' ? 1 : -1;
-        const stories = yield storyModel_1.Story.find(filter)
-            .sort(sort)
-            .select('-chapters.paragraphs.imagePrompt')
-            .limit(50); // Limit search results
-        res.json({
-            stories,
-            totalResults: stories.length,
-            searchQuery: q
-        });
-    }
-    catch (error) {
-        res.status(500).json({ message: "Error searching stories", error: error.message });
-    }
-});
-exports.searchUserStories = searchUserStories;
-// ==========================
-// GET STORY BY STATUS
-// ==========================
-const getStoriesByStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _f;
-    try {
-        const userId = (_f = req.user) === null || _f === void 0 ? void 0 : _f._id;
-        const status = req.params.status;
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        // Validate status
-        const validStatuses = ['in_progress', 'chapters_complete', 'assets_complete'];
-        if (!validStatuses.includes(status)) {
-            return res.status(400).json({
-                message: "Invalid status. Must be one of: in_progress, chapters_complete, assets_complete"
-            });
-        }
-        const skip = (page - 1) * limit;
-        const stories = yield storyModel_1.Story.find({
-            user: userId,
-            status: status
-        })
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .select('-chapters.paragraphs.imagePrompt');
-        const totalStories = yield storyModel_1.Story.countDocuments({
-            user: userId,
-            status: status
-        });
-        const totalPages = Math.ceil(totalStories / limit);
-        res.json({
-            stories,
-            status,
-            pagination: {
-                currentPage: page,
-                totalPages,
-                totalStories,
-                hasNextPage: page < totalPages,
-                hasPrevPage: page > 1
+        // Remove existing prompts for this chapter if any
+        story.chapterImagePrompts = story.chapterImagePrompts.filter(cip => cip.chapter !== parseInt(chapterNumber));
+        // Add new prompts
+        story.chapterImagePrompts.push(chapterImagePrompts);
+        await story.save();
+        res.status(200).json({
+            success: true,
+            message: `Image prompts generated successfully for Chapter ${chapterNumber}`,
+            data: {
+                storyId: story._id,
+                chapterNumber: parseInt(chapterNumber),
+                imagePrompts: prompts,
+                updatedStory: story
             }
         });
     }
-    catch (error) {
-        res.status(500).json({ message: "Error fetching stories by status", error: error.message });
+    catch (err) {
+        res.status(500).json({
+            success: false,
+            message: "Error generating chapter image prompts",
+            error: err.message
+        });
     }
-});
-exports.getStoriesByStatus = getStoriesByStatus;
+};
+exports.generateChapterImagePrompts = generateChapterImagePrompts;

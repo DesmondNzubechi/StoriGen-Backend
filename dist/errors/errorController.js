@@ -53,7 +53,7 @@ const globalErrorHandler = (err, req, res, next) => {
         sendDevError(err, res);
     }
     else {
-        let error = Object.assign({}, err);
+        let error = { ...err };
         if (error.name === "castError")
             error = handleCastErrorDB(error);
         if (error.code === 11000)
