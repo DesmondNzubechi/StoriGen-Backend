@@ -12,7 +12,7 @@ import {
   registerUser,
   loginUser,
   fetchMe,
-  protectedRoute,
+  protectedRoute, 
   restrictedRoute,
   updateMe,
   changeUserPassword, 

@@ -13,6 +13,41 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const AI33_API_KEY = process.env.AI33_API_KEY;
+
+if (!AI33_API_KEY) {
+  throw new Error("AI33_API_KEY environment variable is required");
+}
+
+const AI33_API_BASE_URL =
+  process.env.AI33_API_BASE_URL || "https://api.ai33.pro";
+const AI33_DEFAULT_MODEL_ID =
+  process.env.AI33_TTS_MODEL_ID || "eleven_multilingual_v2";
+const AI33_DEFAULT_VOICE_ID = process.env.AI33_DEFAULT_VOICE_ID;
+
+const resolveNumericEnv = (
+  value: string | undefined,
+  fallback: number
+): number => {
+  if (!value) {
+    return fallback;
+  }
+  const parsed = Number.parseInt(value, 10);
+  if (Number.isNaN(parsed) || parsed <= 0) {
+    return fallback;
+  }
+  return parsed;
+};
+
+const AI33_TTS_POLL_INTERVAL_MS = resolveNumericEnv(
+  process.env.AI33_TTS_POLL_INTERVAL_MS,
+  2000
+);
+const AI33_TTS_MAX_ATTEMPTS = resolveNumericEnv(
+  process.env.AI33_TTS_MAX_ATTEMPTS,
+  15
+);
+
 export interface PromptCustomization {
   tone?:
     | "dramatic"
@@ -33,7 +68,195 @@ interface MotivationCustomization {
   targetWord: number;      // e.g. "consistency"
 }
 
+interface MotivationGenerationOptions {
+  tone: string;
+  type: string;
+  themes: string[];
+  targetLength: number;
+}
+ 
+interface SpeechGenerationOptions {
+  text: string;
+  voiceId?: string;
+  modelId?: string;
+  receiveUrl?: string;
+  withTranscript?: boolean;
+  pollIntervalMs?: number;
+  maxPollAttempts?: number;
+}
+
+type SpeechTaskStatus = "doing" | "done" | "error";
+
+interface SpeechTaskMetadata {
+  audio_url?: string;
+  srt_url?: string;
+}
+
+interface SpeechTaskResponse {
+  id: string;
+  created_at: string;
+  status: SpeechTaskStatus;
+  error_message?: string | null;
+  credit_cost?: number;
+  metadata?: SpeechTaskMetadata;
+  progress?: number;
+  type?: string;
+}
+
+interface SpeechGenerationResult {
+  taskId: string;
+  status: SpeechTaskStatus;
+  audioUrl?: string;
+}
+
+export interface GeneratedMotivation {
+  content: string;
+  caption: string;
+  hashtags: string[];
+}
 export class AIService {
+  private static async sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  private static async createSpeechTask(
+    options: SpeechGenerationOptions
+  ): Promise<{ taskId: string }> {
+    const { text, voiceId, modelId, receiveUrl, withTranscript } = options;
+
+    const resolvedVoiceId = voiceId || AI33_DEFAULT_VOICE_ID;
+    if (!resolvedVoiceId) {
+      throw new Error(
+        "A voiceId must be provided either in the request or via AI33_DEFAULT_VOICE_ID environment variable."
+      );
+    }
+
+    const trimmedText = text.trim();
+    if (!trimmedText) {
+      throw new Error("Text content is required to generate speech.");
+    }
+
+    const payload: Record<string, unknown> = {
+      text: trimmedText,
+      model_id: modelId || AI33_DEFAULT_MODEL_ID,
+      with_transcript: withTranscript ?? false,
+    };
+
+    if (receiveUrl) {
+      payload.receive_url = receiveUrl;
+    }
+
+    const response = await fetch(
+      `${AI33_API_BASE_URL}/v1/text-to-speech/${resolvedVoiceId}?output_format=mp3_44100_128`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "xi-api-key": AI33_API_KEY!,
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(
+        `Failed to create speech task. Status: ${response.status}. Body: ${errorBody}`
+      );
+    }
+
+    const result = (await response.json()) as {
+      success?: boolean;
+      task_id?: string;
+      error?: string;
+      message?: string;
+    };
+
+    if (!result.task_id) {
+      throw new Error(
+        `Speech task creation response missing task_id. Raw response: ${JSON.stringify(
+          result
+        )}`
+      );
+    }
+
+    return { taskId: result.task_id };
+  }
+
+  private static async fetchSpeechTask(
+    taskId: string
+  ): Promise<SpeechTaskResponse> {
+    const response = await fetch(`${AI33_API_BASE_URL}/v1/task/${taskId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "xi-api-key": AI33_API_KEY!,
+      },
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(
+        `Failed to fetch speech task ${taskId}. Status: ${response.status}. Body: ${errorBody}`
+      );
+    }
+
+    return (await response.json()) as SpeechTaskResponse;
+  }
+
+  private static async pollSpeechTask(
+    taskId: string,
+    pollIntervalMs: number,
+    maxAttempts: number
+  ): Promise<SpeechTaskResponse> {
+    let attempts = 0;
+    let latest: SpeechTaskResponse | null = null;
+
+    while (attempts < maxAttempts) {
+      latest = await this.fetchSpeechTask(taskId);
+
+      if (latest.status === "done" || latest.status === "error") {
+        return latest;
+      }
+
+      attempts += 1;
+      await this.sleep(pollIntervalMs);
+    }
+
+    return (
+      latest || {
+        id: taskId,
+        created_at: new Date().toISOString(),
+        status: "doing",
+      }
+    );
+  }
+
+  static async generateMotivationSpeechAudio(
+    options: SpeechGenerationOptions
+  ): Promise<SpeechGenerationResult> {
+    const pollInterval =
+      options.pollIntervalMs ?? AI33_TTS_POLL_INTERVAL_MS;
+    const maxAttempts =
+      options.maxPollAttempts ?? AI33_TTS_MAX_ATTEMPTS;
+
+    const { taskId } = await this.createSpeechTask(options);
+
+    const task = await this.pollSpeechTask(
+      taskId,
+      pollInterval,
+      maxAttempts
+    );
+
+    return {
+      taskId,
+      status: task.status,
+      audioUrl: task.metadata?.audio_url,
+    };
+  }
+
 //generate motivational speech
  static async generateMotivationalSpeech(
     customizations: MotivationCustomization
@@ -68,7 +291,7 @@ Requirements:
    - **5–7 relevant hashtags**
    - **1 image prompt per paragraph**, describing what visuals would match each moment emotionally.
 
-Format your response **exactly** like this:
+Format your response **exactly** like this: 
 
 Title:
 <generated title>
@@ -132,6 +355,106 @@ Image Prompts:
     };
   }
 
+
+  // Generate 5 viral motivational pieces
+  static async generateMotivations(
+    customizations: MotivationGenerationOptions
+  ): Promise<GeneratedMotivation[]> {
+    const { tone, type, themes, targetLength } = customizations;
+
+    const resolvedTone = tone || "Uplifting";
+    const resolvedType = type || "Affirmation";
+    const resolvedThemes =
+      themes.length > 0 ? themes.join(", ") : "resilience, perseverance";
+    const resolvedLength = targetLength > 0 ? targetLength : 300;
+
+    const prompt = `
+You are a motivational and inspirational writing expert.
+Generate exactly 5 unique ${resolvedType.toLowerCase()} pieces.
+
+Guidelines:
+- Tone: ${resolvedTone}
+- Themes to weave in: ${resolvedThemes}
+- Each piece must start with a compelling hook tailored to the tone, type, and themes.
+- Each piece must end with an empowering outro that reinforces the customization details.
+- Each piece must be roughly ${resolvedLength} words (±20%).
+- Write in engaging, modern language. Avoid clichés and make each piece actionable.
+- Use quotes from famous influential people, books, or movies to make each piece more engaging.
+- Ensure each piece feels distinct while sharing the requested tone and themes.
+- Provide a short caption (1 sentence) for each piece with exactly 5 relevant hashtags per piece.
+- Finish with a **social CTA** that says: “Follow us for more daily motivation. Like, comment, and share this video if it inspired you.”
+
+Return only valid JSON, no markdown, using this structure:
+{
+  "motivations": [
+    {
+      "content": "<motivation 1 text with hook at start and outro at end>",
+      "caption": "<caption>",
+    },
+    {
+      "content": "<motivation 2 text with hook at start and outro at end>",
+      "caption": "<caption>",
+    },
+    {
+      "content": "<motivation 3 text with hook at start and outro at end>",
+      "caption": "<caption>",
+    },
+     {
+      "content": "<motivation 3 text with hook at start and outro at end>",
+      "caption": "<caption>",
+    },
+     {
+      "content": "<motivation 3 text with hook at start and outro at end>",
+      "caption": "<caption>",
+    }
+  ]
+}
+`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.8,
+    });
+
+    const rawOutput = response.choices[0]?.message?.content || "";
+    const cleaned = rawOutput
+      .replace(/```json\s*/gi, "")
+      .replace(/```\s*/g, "")
+      .trim();
+
+    try {
+      const parsed = JSON.parse(cleaned);
+      if (
+        parsed &&
+        Array.isArray(parsed.motivations)
+      ) {
+        return parsed.motivations
+          .map(
+            (item: {
+              content?: string;
+              caption?: string;
+             // hashtags?: string[];
+            }) => ({
+              content: item?.content?.trim() ?? "",
+              caption: item?.caption?.trim() ?? "",
+              // hashtags: Array.isArray(item?.hashtags)
+              //   ? item!.hashtags.filter(
+              //       (tag): tag is string => typeof tag === "string"
+              //     )
+              //   : [],
+            })
+          )
+          .filter(
+            (item: GeneratedMotivation) => item.content.length > 0
+          );
+      }
+    } catch (error) {
+      console.error("Failed to parse AI motivations response:", cleaned);
+    }
+
+    return [];
+  }
 
   // Generate 10 viral story ideas
   static async generateViralIdeas(

@@ -9,7 +9,7 @@ import { AppError } from "../errors/appError";
   export const generateShort = async (req: Request, res: Response, next : NextFunction) => {
     try {
         const { typeOfMotivation, theme, targetWord} = req.body;
-        
+         
        const token = req.cookies.jwt;
             
               if (!token) {

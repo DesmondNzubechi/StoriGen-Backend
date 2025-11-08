@@ -50,10 +50,10 @@ export const createAndSendTokenToUser = async (
     message,
     data: {
       user,
-    },
+    }, 
   });
 };
-
+ 
 //REGISTER USER
 export const registerUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -87,7 +87,7 @@ export const registerUser = catchAsync(
         "user registration successful.",
     });
   }
-);
+); 
 
 //LOGIN USER
 export const loginUser = catchAsync(
@@ -100,8 +100,8 @@ export const loginUser = catchAsync(
       return next(
         new AppError("invalid email or password. Kindly try again", 400)
       );
-    }
-
+    } 
+ 
     // Check if user has Google account linked
     const hasGoogleAccount = user.googleId ? true : false;
 

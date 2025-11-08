@@ -32,6 +32,7 @@ const generateShort = async (req, res, next) => {
             theme,
             targetWord,
         });
+        console.log("The result", aiResult);
         // Save to DB
         const newShort = await shortsModel_1.default.create({
             title: aiResult.title,

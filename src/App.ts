@@ -8,6 +8,7 @@ import authRoutes from "./Routes/authRoute";
 import ideasRoutes from './Routes/ideas';
 import shortsRoutes from './Routes/shortsRoute';
 import summariesRoutes from './Routes/summaries';
+import motivationRoutes from "./Routes/motivationRoutes";
 import globalErrorHandler from "./errors/errorController";
 import { config } from "dotenv";
 
@@ -19,7 +20,7 @@ if (!ORIGIN_URL) {
   throw new Error("Make sure that the origin url and the port is defined");
 }
 const app = express();
-
+ 
 // CORS configuration
 const corsOptions = {
   origin: [ORIGIN_URL, 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:8080'],
@@ -47,6 +48,7 @@ app.use('/api/summaries', summariesRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use('/api/ideas', ideasRoutes);
 app.use('/api/shorts', shortsRoutes);
+app.use("/api/v1/motivation", motivationRoutes);
 
 
 // Root route
