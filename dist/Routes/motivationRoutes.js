@@ -55,7 +55,7 @@ const router = express_1.default.Router();
  *       401:
  *         description: Unauthorised
  */
-router.post("/generate", motivationController_1.generateMotivation);
+router.post("/generate", authController_1.protectedRoute, motivationController_1.generateMotivation);
 /**
  * @swagger
  * /api/v1/motivation/{id}/speech:

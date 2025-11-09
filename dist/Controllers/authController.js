@@ -9,11 +9,11 @@ const catchAsync_1 = __importDefault(require("../utils/catchAsync"));
 const appError_1 = require("../errors/appError");
 const dotenv_1 = require("dotenv");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const verifyTokenAndGetUser_1 = require("../utils/verifyTokenAndGetUser");
 const sendEmail_1 = require("../utils/sendEmail");
 const crypto_1 = __importDefault(require("crypto"));
 const appResponse_1 = require("../utils/appResponse");
 const emailVerificationCode_1 = require("../utils/emailVerificationCode");
+const authMiddleware_1 = require("../middleware/authMiddleware");
 (0, dotenv_1.config)({ path: "./config.env" });
 const { JWT_EXPIRES_IN, JWT_SECRET, JWT_COOKIE_EXPIRES, ORIGIN_URL, NODE_ENV, COOKIE_DOMAIN, } = process.env;
 if (!JWT_EXPIRES_IN || !JWT_SECRET || !JWT_COOKIE_EXPIRES || !ORIGIN_URL) {
@@ -28,7 +28,7 @@ const buildCookieOptions = () => {
     const cookieOptions = {
         expires: new Date(Date.now() + cookieExpiryDays * 24 * 60 * 60 * 1000),
         httpOnly: true,
-        secure: true,
+        secure: isProduction,
         sameSite: isProduction ? "none" : "lax",
     };
     if (COOKIE_DOMAIN) {
@@ -47,6 +47,7 @@ const createAndSendTokenToUser = async (user, statusCode, message, res) => {
         message,
         data: {
             user,
+            token,
         },
     });
 };
@@ -98,18 +99,15 @@ exports.loginUser = (0, catchAsync_1.default)(async (req, res, next) => {
                 hasGoogleAccount,
                 googleId: user.googleId
             },
+            token,
         },
     });
 });
 //FETCH AUTHENTICATED USER INFORMATION
 exports.fetchMe = (0, catchAsync_1.default)(async (req, res, next) => {
-    const token = req.cookies.jwt;
-    if (!token) {
-        return next(new appError_1.AppError("You are not authorised to access this route", 401));
-    }
-    const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
+    const user = req.user;
     if (!user) {
-        return next(new appError_1.AppError("An error occured. Please try again", 400));
+        return next(new appError_1.AppError("You are not authorised to access this route", 401));
     }
     res.status(200).json({
         status: "success",
@@ -119,51 +117,13 @@ exports.fetchMe = (0, catchAsync_1.default)(async (req, res, next) => {
         },
     });
 });
-//PROTECTED ROUTE
-exports.protectedRoute = (0, catchAsync_1.default)(async (req, res, next) => {
-    let token = req.cookies.jwt;
-    // Fallback to Authorization header if cookie is not present
-    if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-        token = req.headers.authorization.split(' ')[1];
-    }
-    if (!token) {
-        return next(new appError_1.AppError("You are not authorized to access this route", 401));
-    }
-    const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
-    if (!user) {
-        return next(new appError_1.AppError("User with this token does not exist or  token already expired", 400));
-    }
-    // Set user in request object
-    req.user = user;
-    next();
-});
-const restrictedRoute = (role) => {
-    return (0, catchAsync_1.default)(async (req, res, next) => {
-        let token = req.cookies.jwt;
-        // Fallback to Authorization header if cookie is not present
-        if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-            token = req.headers.authorization.split(' ')[1];
-        }
-        const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
-        if (!user || !role.includes(user.role)) {
-            return next(new appError_1.AppError("You are restricted from accessing this route", 401));
-        }
-        next();
-    });
-};
-exports.restrictedRoute = restrictedRoute;
+// Shared authentication middleware re-exports
+exports.protectedRoute = authMiddleware_1.protect;
+exports.restrictedRoute = authMiddleware_1.restrictTo;
 exports.updateMe = (0, catchAsync_1.default)(async (req, res, next) => {
-    let token = req.cookies.jwt;
-    // Fallback to Authorization header if cookie is not present
-    if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-        token = req.headers.authorization.split(' ')[1];
-    }
-    if (!token) {
-        return next(new appError_1.AppError("You are not authorized to perform this action.", 401));
-    }
-    const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
+    const user = req.user;
     if (!user) {
-        return next(new appError_1.AppError("Could not find user with this token. please login again.", 404));
+        return next(new appError_1.AppError("You are not authorized to perform this action.", 401));
     }
     const { newEmail, newFullName } = req.body;
     if (!newEmail || !newFullName) {
@@ -186,15 +146,7 @@ exports.changeUserPassword = (0, catchAsync_1.default)(async (req, res, next) =>
     if (newPassword !== confirmNewPassword) {
         return next(new appError_1.AppError("new password and confirm password must be the same.", 400));
     }
-    let token = req.cookies.jwt;
-    // Fallback to Authorization header if cookie is not present
-    if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-        token = req.headers.authorization.split(' ')[1];
-    }
-    if (!token) {
-        return next(new appError_1.AppError("You are not authorized to perform this action.", 401));
-    }
-    const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
+    const user = req.user;
     if (!user) {
         return next(new appError_1.AppError("Could not fetch user with the token. Kindly login again.", 404));
     }
@@ -387,15 +339,7 @@ exports.linkGoogleAccount = (0, catchAsync_1.default)(async (req, res, next) => 
 });
 //UNLINK GOOGLE ACCOUNT
 exports.unlinkGoogleAccount = (0, catchAsync_1.default)(async (req, res, next) => {
-    let token = req.cookies.jwt;
-    // Fallback to Authorization header if cookie is not present
-    if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-        token = req.headers.authorization.split(' ')[1];
-    }
-    if (!token) {
-        return next(new appError_1.AppError("You are not authorized to perform this action.", 401));
-    }
-    const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
+    const { user } = req;
     if (!user) {
         return next(new appError_1.AppError("Could not find user with this token. Please login again.", 404));
     }

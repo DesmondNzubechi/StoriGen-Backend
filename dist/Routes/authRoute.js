@@ -209,7 +209,7 @@ router.route("/login").post((0, validationMiddleware_1.validateRequestBody)(vali
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.route("/fetchMe").get(authController_1.fetchMe);
+router.route("/fetchMe").get(authController_1.protectedRoute, authController_1.fetchMe);
 /**
  * @swagger
  * /api/v1/auth/updateMe:
@@ -261,7 +261,9 @@ router.route("/updateMe").patch(authController_1.protectedRoute, (0, validationM
  *       401:
  *         description: Invalid credentials
  */
-router.route("/changePassword").patch((0, validationMiddleware_1.validateRequestBody)(validationMiddleware_1.changePasswordValidationRules), authController_1.changeUserPassword);
+router
+    .route("/changePassword")
+    .patch(authController_1.protectedRoute, (0, validationMiddleware_1.validateRequestBody)(validationMiddleware_1.changePasswordValidationRules), authController_1.changeUserPassword);
 /**
  * @swagger
  * /api/v1/auth/forgotPassword:
@@ -306,7 +308,7 @@ router.route("/forgotPassword").post((0, validationMiddleware_1.validateRequestB
  */
 router
     .route("/makeUserAdmin/:id")
-    .patch(authController_1.protectedRoute, (0, authController_1.restrictedRoute)(["super-admin"]), authController_1.makeUserAdmin);
+    .patch(authController_1.protectedRoute, (0, authController_1.restrictedRoute)("super-admin"), authController_1.makeUserAdmin);
 /**
  * @swagger
  * /api/v1/auth/resetPassword/{token}:

@@ -3,10 +3,9 @@ import { FilterQuery } from "mongoose";
 import { ParsedQs } from "qs";
 import { Motivation, IMotivation } from "../Models/Motivation";
 import { AppError } from "../errors/appError";
-import { verifyTokenAndGetUser } from "../utils/verifyTokenAndGetUser";
 import { validateObjectId } from "../utils/validateObjectId";
-import { IUser } from "../Models/userModel";
 import { AIService } from "../Services/aiService";
+import { IUser } from "../Models/userModel";
 
 type ThemeInput =
   | string
@@ -65,6 +64,11 @@ type GeneratedMotivationPayload = {
   caption: string;
 };
 
+type AuthenticatedRequest = Request & {
+  user?: IUser;
+  authToken?: string;
+};
+
 
 export const generateMotivation = async (
   req: Request,
@@ -119,12 +123,7 @@ export const generateMotivation = async (
     const normalizedTone = tone.trim();
     const normalizedType = type.trim();
 
-    const token = req.cookies.jwt;
-    if (!token) {
-      return next(new AppError("You are not authorised to access this route", 401));
-    }
-
-    const user = await verifyTokenAndGetUser(token, next);
+    const { user } = req as AuthenticatedRequest;
 
     if (!user) {
       return next(new AppError("You are not authorised to access this route", 401));
@@ -326,20 +325,14 @@ export const getAllMotivations = async (
       ];
     }
 
-    const token = req.cookies.jwt;
-    if (!token) {
-      return next(new AppError("You are not authorised to access this route", 401));
-    }
-
-    const user = await verifyTokenAndGetUser(token, next);
+    const { user } = req as AuthenticatedRequest;
 
     if (!user) {
       return next(new AppError("You are not authorised to access this route", 401));
     }
 
-
     const { mine } = req.query;
-    if (mine === "true" && user) {
+    if (mine === "true") {
       filter.createdBy = user._id;
     }
 
@@ -380,15 +373,8 @@ export const getUserMotivations = async (
   next: NextFunction
 ) => {
   try {
-    const token = req.cookies.jwt;
+    const { user } = req as AuthenticatedRequest;
 
-    if (!token) {
-      return next(
-        new AppError("You are not authorised to access this route", 401)
-      );
-    }
-
-    const user = await verifyTokenAndGetUser(token, next);
     if (!user) {
       return next(
         new AppError("You are not authorised to access this route", 401)

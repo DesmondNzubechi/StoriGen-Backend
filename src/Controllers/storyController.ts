@@ -1,11 +1,14 @@
 import { NextFunction, Request, Response } from 'express';
 import { Story } from '../Models/storyModel';
 import { AIService } from '../Services/aiService';
-import { verifyTokenAndGetUser } from '../utils/verifyTokenAndGetUser';
 import { AppError } from '../errors/appError';
 
+type AuthenticatedRequest = Request & {
+  user?: any;
+};
 
-export const generateChapterController = async (req: Request, res: Response, next: NextFunction) => {
+
+export const generateChapterController = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const { storyId, summary, chapterNumber, totalChapters, wordsPerChapter, customizations = {} } = req.body;
 
@@ -16,15 +19,13 @@ export const generateChapterController = async (req: Request, res: Response, nex
       });
     } 
  
-    const token = req.cookies.jwt;
-     
-       if (!token) {
-         return next(
-           new AppError("You are not authorised to access this route", 401)
-         );
-       }
-      
-       const user = await verifyTokenAndGetUser(token, next);
+    const user = req.user;
+
+    if (!user) {
+      return next(
+        new AppError("You are not authorised to access this route", 401)
+      );
+    }
 
     let story;
 
@@ -164,19 +165,15 @@ export const generateChapterController = async (req: Request, res: Response, nex
 /**
  * Get all chapters for a script
  */
-export const getFullStory = async (req: Request, res: Response, next: NextFunction) => {
+export const getFullStory = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {                                                                        
   try {
     const { storyId } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
-    // Check token
-    const token = req.cookies.jwt;
-    if (!token) {
+    const user = req.user;
+    if (!user) {
       return next(new AppError("You are not authorised to access this route", 401));
     }
-
-    const user = await verifyTokenAndGetUser(token, next);
-    if (!user) return;
 
     // Find the story with chapters
     const story = await Story.findOne({ _id: storyId, user: user._id });
@@ -234,17 +231,14 @@ export const getFullStory = async (req: Request, res: Response, next: NextFuncti
 /**
  * Get a story by ID
  */
-export const getStoryUserById = async (req: Request, res: Response, next: NextFunction) => {
+export const getStoryUserById = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {                                                                    
   try {
     const { storyId } = req.params;
 
-    const token = req.cookies.jwt;
-    if (!token) {
+    const user = req.user;
+    if (!user) {
       return next(new AppError("You are not authorised to access this route", 401));
     }
-
-    const user = await verifyTokenAndGetUser(token, next);
-    if (!user) return;
 
     // Find story by ID & ownership
     const story = await Story.find({user: user._id });
@@ -273,19 +267,17 @@ export const getStoryUserById = async (req: Request, res: Response, next: NextFu
 /**
  * Update script settings
  */
-export const updateScript = async (req: Request, res: Response, next: NextFunction) => {
+export const updateScript = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {                                                                        
   try {
     const { summaryId } = req.params;
     const { totalChapters, title } = req.body;
-    const token = req.cookies.jwt;
-     
-       if (!token) {
-         return next(
-           new AppError("You are not authorised to access this route", 401)
-         );
-       }
-     
-       const user = await verifyTokenAndGetUser(token, next);
+    const user = req.user;
+
+    if (!user) {
+      return next(
+        new AppError("You are not authorised to access this route", 401)
+      );
+    }
 
     const script = await Story.findOneAndUpdate(
       { summary: summaryId, user: user._id },
@@ -316,18 +308,14 @@ export const updateScript = async (req: Request, res: Response, next: NextFuncti
 
 //GENERATE STORY TITLE
 // === Generate Single Viral Title ===
-export const generateViralTitle = async (req: Request, res: Response, next: NextFunction) => {
+export const generateViralTitle = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {                                                                  
   try {
     const { storyId } = req.params;
 
-    // Check authentication
-    const token = req.cookies.jwt;
-    if (!token) {
+    const user = req.user;
+    if (!user) {
       return next(new AppError("You are not authorised to access this route", 401));
     }
-
-    const user = await verifyTokenAndGetUser(token, next);
-    if (!user) return;
 
     // Find story and verify ownership
     const story = await Story.findOne({ _id: storyId, user: user._id });
@@ -370,18 +358,14 @@ export const generateViralTitle = async (req: Request, res: Response, next: Next
 };
 
 // === Generate Viral Description ===
-export const generateViralDescription = async (req: Request, res: Response, next: NextFunction) => {
+export const generateViralDescription = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {                                                            
   try {
     const { storyId } = req.params;
 
-    // Check authentication
-    const token = req.cookies.jwt;
-    if (!token) {
+    const user = req.user;
+    if (!user) {
       return next(new AppError("You are not authorised to access this route", 401));
     }
-
-    const user = await verifyTokenAndGetUser(token, next);
-    if (!user) return;
 
     // Find story and verify ownership
     const story = await Story.findOne({ _id: storyId, user: user._id });
@@ -425,18 +409,14 @@ export const generateViralDescription = async (req: Request, res: Response, next
 
 
 // === Generate Viral Thumbnail Prompts ===
-export const generateViralThumbnailPrompts = async (req: Request, res: Response, next: NextFunction) => {
+export const generateViralThumbnailPrompts = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {                                                       
   try {
     const { storyId } = req.params;
 
-    // Check authentication
-    const token = req.cookies.jwt;
-    if (!token) {
+    const user = req.user;
+    if (!user) {
       return next(new AppError("You are not authorised to access this route", 401));
     }
-
-    const user = await verifyTokenAndGetUser(token, next);
-    if (!user) return;
 
     // Find story and verify ownership
     const story = await Story.findOne({ _id: storyId, user: user._id });
@@ -476,18 +456,14 @@ export const generateViralThumbnailPrompts = async (req: Request, res: Response,
 };
 
 // === Generate Viral YouTube Shorts Hooks ===
-export const generateViralShortsHooks = async (req: Request, res: Response, next: NextFunction) => {
+export const generateViralShortsHooks = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {                                                            
   try {
     const { storyId } = req.params;
 
-    // Check authentication
-    const token = req.cookies.jwt;
-    if (!token) {
+    const user = req.user;
+    if (!user) {
       return next(new AppError("You are not authorised to access this route", 401));
     }
-
-    const user = await verifyTokenAndGetUser(token, next);
-    if (!user) return;
 
     // Find story and verify ownership
     const story = await Story.findOne({ _id: storyId, user: user._id });
@@ -534,18 +510,14 @@ export const generateViralShortsHooks = async (req: Request, res: Response, next
 };
 
 // === Generate SEO Keywords and Hashtags ===
-export const generateSEOKeywords = async (req: Request, res: Response, next: NextFunction) => {
+export const generateSEOKeywords = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {                                                                 
   try {
     const { storyId } = req.params;
 
-    // Check authentication
-    const token = req.cookies.jwt;
-    if (!token) {
+    const user = req.user;
+    if (!user) {
       return next(new AppError("You are not authorised to access this route", 401));
     }
-
-    const user = await verifyTokenAndGetUser(token, next);
-    if (!user) return;
 
     // Find story and verify ownership
     const story = await Story.findOne({ _id: storyId, user: user._id });
@@ -603,18 +575,14 @@ export const generateSEOKeywords = async (req: Request, res: Response, next: Nex
 };
 
 // === Generate Chapter Image Prompts ===
-export const generateChapterImagePrompts = async (req: Request, res: Response, next: NextFunction) => {
+export const generateChapterImagePrompts = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {                                                         
   try {
     const { storyId, chapterNumber } = req.params;
 
-    // Check authentication
-    const token = req.cookies.jwt;
-    if (!token) {
+    const user = req.user;
+    if (!user) {
       return next(new AppError("You are not authorised to access this route", 401));
     }
-
-    const user = await verifyTokenAndGetUser(token, next);
-    if (!user) return;
 
     // Find story and verify ownership
     const story = await Story.findOne({ _id: storyId, user: user._id });

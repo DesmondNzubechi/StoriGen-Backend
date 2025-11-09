@@ -239,7 +239,7 @@ router.route("/login").post(validateRequestBody(loginValidationRules), loginUser
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.route("/fetchMe").get(fetchMe);
+router.route("/fetchMe").get(protectedRoute, fetchMe);
 /**
  * @swagger
  * /api/v1/auth/updateMe:
@@ -294,7 +294,13 @@ router.route("/updateMe").patch(protectedRoute, validateRequestBody(updateMeVali
  *         description: Invalid credentials
  */
 
-router.route("/changePassword").patch(validateRequestBody(changePasswordValidationRules), changeUserPassword);
+router
+  .route("/changePassword")
+  .patch(
+    protectedRoute,
+    validateRequestBody(changePasswordValidationRules),
+    changeUserPassword
+  );
 
 /**
  * @swagger
@@ -342,7 +348,7 @@ router.route("/forgotPassword").post(validateRequestBody(forgotPasswordValidatio
 
 router
   .route("/makeUserAdmin/:id")
-  .patch(protectedRoute, restrictedRoute(["super-admin"]), makeUserAdmin);
+  .patch(protectedRoute, restrictedRoute("super-admin"), makeUserAdmin);
 
 
 /**

@@ -62,7 +62,7 @@ const router = express.Router();
  *       401:
  *         description: Unauthorised
  */
-router.post("/generate", generateMotivation);
+router.post("/generate", protectedRoute, generateMotivation);
 
 /**
  * @swagger

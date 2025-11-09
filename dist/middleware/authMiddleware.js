@@ -1,37 +1,45 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.authorize = exports.authenticate = exports.restrictTo = exports.protect = void 0;
 const verifyTokenAndGetUser_1 = require("../utils/verifyTokenAndGetUser");
 const appError_1 = require("../errors/appError");
-const protect = async (req, res, next) => {
+const catchAsync_1 = __importDefault(require("../utils/catchAsync"));
+const extractToken = (req) => {
     var _a;
-    try {
-        let token = (_a = req.cookies) === null || _a === void 0 ? void 0 : _a.jwt;
-        if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-            token = req.headers.authorization.split(' ')[1];
-        }
-        if (!token) {
-            return next(new appError_1.AppError('You are not authorized to access this route', 401));
-        }
-        const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
-        if (!user)
-            return; // verifyTokenAndGetUser will handle the error via next
-        req.user = user;
-        next();
+    if ((_a = req.cookies) === null || _a === void 0 ? void 0 : _a.jwt) {
+        return req.cookies.jwt;
     }
-    catch (err) {
-        next(err);
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+        return authHeader.slice(7);
     }
+    return null;
 };
-exports.protect = protect;
-const restrictTo = (...roles) => {
-    return (req, res, next) => {
-        const user = req.user;
-        if (!user || !roles.includes(user.role)) {
-            return next(new appError_1.AppError('You are restricted from accessing this route', 403));
-        }
-        next();
-    };
+exports.protect = (0, catchAsync_1.default)(async (req, res, next) => {
+    const token = extractToken(req);
+    if (!token) {
+        return next(new appError_1.AppError("You are not authorized to access this route", 401));
+    }
+    const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
+    if (!user) {
+        return;
+    }
+    // Store resolved authentication on the request so controllers can rely on it.
+    // This dual cookie/header check keeps iOS/Safari users authenticated when
+    // cross-site cookies are stripped in third-party contexts.
+    req.user = user;
+    req.authToken = token;
+    next();
+});
+const restrictTo = (...roles) => (req, res, next) => {
+    const user = req.user;
+    if (!user || !roles.includes(user.role)) {
+        return next(new appError_1.AppError("You are restricted from accessing this route", 403));
+    }
+    next();
 };
 exports.restrictTo = restrictTo;
 exports.authenticate = exports.protect;

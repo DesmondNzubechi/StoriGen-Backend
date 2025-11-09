@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateMotivation = exports.deleteMotivation = exports.getAllMotivationsAdmin = exports.getMotivationById = exports.getUserMotivations = exports.getAllMotivations = exports.generateSpeechForMotivation = exports.generateMotivation = void 0;
 const Motivation_1 = require("../Models/Motivation");
 const appError_1 = require("../errors/appError");
-const verifyTokenAndGetUser_1 = require("../utils/verifyTokenAndGetUser");
 const validateObjectId_1 = require("../utils/validateObjectId");
 const aiService_1 = require("../Services/aiService");
 const normalizeThemes = (theme) => {
@@ -65,11 +64,7 @@ const generateMotivation = async (req, res, next) => {
         }
         const normalizedTone = tone.trim();
         const normalizedType = type.trim();
-        const token = req.cookies.jwt;
-        if (!token) {
-            return next(new appError_1.AppError("You are not authorised to access this route", 401));
-        }
-        const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
+        const { user } = req;
         if (!user) {
             return next(new appError_1.AppError("You are not authorised to access this route", 401));
         }
@@ -205,16 +200,12 @@ const getAllMotivations = async (req, res, next) => {
                 { hashtags: { $elemMatch: { $regex: regex } } },
             ];
         }
-        const token = req.cookies.jwt;
-        if (!token) {
-            return next(new appError_1.AppError("You are not authorised to access this route", 401));
-        }
-        const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
+        const { user } = req;
         if (!user) {
             return next(new appError_1.AppError("You are not authorised to access this route", 401));
         }
         const { mine } = req.query;
-        if (mine === "true" && user) {
+        if (mine === "true") {
             filter.createdBy = user._id;
         }
         const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
@@ -249,11 +240,7 @@ const getAllMotivations = async (req, res, next) => {
 exports.getAllMotivations = getAllMotivations;
 const getUserMotivations = async (req, res, next) => {
     try {
-        const token = req.cookies.jwt;
-        if (!token) {
-            return next(new appError_1.AppError("You are not authorised to access this route", 401));
-        }
-        const user = await (0, verifyTokenAndGetUser_1.verifyTokenAndGetUser)(token, next);
+        const { user } = req;
         if (!user) {
             return next(new appError_1.AppError("You are not authorised to access this route", 401));
         }
