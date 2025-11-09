@@ -73,7 +73,7 @@ interface MotivationGenerationOptions {
   type: string;
   themes: string[];
   targetLength: number;
-}
+} 
  
 interface SpeechGenerationOptions {
   text: string;
