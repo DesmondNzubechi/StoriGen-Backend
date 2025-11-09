@@ -74,7 +74,7 @@ interface MotivationGenerationOptions {
   themes: string[];
   targetLength: number;
 } 
- 
+  
 interface SpeechGenerationOptions {
   text: string;
   voiceId?: string;

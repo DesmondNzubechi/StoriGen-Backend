@@ -157,8 +157,8 @@ const generateSpeechForMotivation = async (req, res, next) => {
                 text: sanitizedContent,
                 voiceId,
                 receiveUrl,
-                modelId: "eleven_multilingual_v2",
-                withTranscript: false,
+                modelId,
+                withTranscript,
             });
         }
         catch (error) {

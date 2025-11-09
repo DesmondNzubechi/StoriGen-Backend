@@ -253,8 +253,8 @@ export const generateSpeechForMotivation = async (
         text: sanitizedContent,
         voiceId,
         receiveUrl,
-        modelId: "eleven_multilingual_v2",
-        withTranscript : false,
+        modelId,
+        withTranscript,
       });
     } catch (error) {
       console.error("Speech generation failed:", error);

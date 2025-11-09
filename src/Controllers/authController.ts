@@ -12,8 +12,14 @@ import { generatEmailVerificationCode } from "../utils/emailVerificationCode";
 
 config({ path: "./config.env" });
 
-const { JWT_EXPIRES_IN, JWT_SECRET, JWT_COOKIE_EXPIRES, ORIGIN_URL } =
-  process.env; 
+const {
+  JWT_EXPIRES_IN,
+  JWT_SECRET,
+  JWT_COOKIE_EXPIRES,
+  ORIGIN_URL,
+  NODE_ENV,
+  COOKIE_DOMAIN,
+} = process.env;
 
 if (!JWT_EXPIRES_IN || !JWT_SECRET || !JWT_COOKIE_EXPIRES || !ORIGIN_URL) {
   throw new AppError(
@@ -21,6 +27,28 @@ if (!JWT_EXPIRES_IN || !JWT_SECRET || !JWT_COOKIE_EXPIRES || !ORIGIN_URL) {
     400
   );
 }
+
+const isProduction = NODE_ENV === "production";
+const cookieExpiryDays = parseInt(JWT_COOKIE_EXPIRES, 10);
+
+if (Number.isNaN(cookieExpiryDays)) {
+  throw new AppError("JWT_COOKIE_EXPIRES must be a valid number", 500);
+}
+
+const buildCookieOptions = (): CookieOptions => {
+  const cookieOptions: CookieOptions = {
+    expires: new Date(Date.now() + cookieExpiryDays * 24 * 60 * 60 * 1000),
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+  };
+
+  if (COOKIE_DOMAIN) {
+    cookieOptions.domain = COOKIE_DOMAIN;
+  }
+
+  return cookieOptions;
+};
 
 const signInToken = async (id: string) => {
   return jwt.sign({ id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN || "10d" } as jwt.SignOptions);
@@ -33,17 +61,7 @@ export const createAndSendTokenToUser = async (
   res: Response
 ) => {
   const token = await signInToken(user._id);
-
-  const theCookieOptions: CookieOptions = {
-    expires: new Date(
-      Date.now() + parseInt(JWT_COOKIE_EXPIRES, 10) * 24 * 60 * 60 * 1000
-    ),
-    httpOnly: true,
-    sameSite: "none",
-    secure: true,
-  };
-
-  res.cookie("jwt", token, theCookieOptions);
+  res.cookie("jwt", token, buildCookieOptions());
 
   res.status(statusCode).json({
     status: "success",
@@ -107,16 +125,7 @@ export const loginUser = catchAsync(
 
     // Only issue JWT if email is verified
     const token = await signInToken(user._id);
-    const theCookieOptions: CookieOptions = {
-      expires: new Date(
-        Date.now() + parseInt(JWT_COOKIE_EXPIRES, 10) * 24 * 60 * 60 * 1000
-      ),
-      httpOnly: true,
-      sameSite: "none",
-      secure: true,
-    };
-
-    res.cookie("jwt", token, theCookieOptions);
+    res.cookie("jwt", token, buildCookieOptions());
 
     res.status(200).json({
       status: "success",
@@ -539,14 +548,12 @@ export const verifyUserEmail = catchAsync(async (req, res, next) => {
 });
 
 export const logoutUser = catchAsync(async (req, res, next) => {
-  const CookieOptions = {
-    secure: true,
-    httpOnly: true,
-    sameSite: "none" as "none",
-    expires: new Date(Date.now() + 1 * 1000),
+  const cookieOptions = {
+    ...buildCookieOptions(),
+    expires: new Date(Date.now() + 1000),
   };
 
-  res.cookie("jwt", "logout", CookieOptions);
+  res.cookie("jwt", "logout", cookieOptions);
 
   res.status(200).json({
     status: "success",
@@ -565,16 +572,7 @@ export const googleOAuthSuccess = catchAsync(async (req: Request, res: Response,
   const isNewUser = !user.createdAt || (Date.now() - new Date(user.createdAt).getTime()) < 60000; // Within 1 minute
 
   const token = await signInToken(user._id);
-  const theCookieOptions: CookieOptions = {
-    expires: new Date(
-      Date.now() + parseInt(JWT_COOKIE_EXPIRES, 10) * 24 * 60 * 60 * 1000
-    ),
-    httpOnly: true,
-    sameSite: "none",
-    secure: true,
-  }; 
-
-  res.cookie("jwt", token, theCookieOptions);
+  res.cookie("jwt", token, buildCookieOptions());
 
   // Redirect to frontend with token in URL
   const frontendRedirectUrl = ORIGIN_URL;

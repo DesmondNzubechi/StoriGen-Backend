@@ -15,22 +15,33 @@ const crypto_1 = __importDefault(require("crypto"));
 const appResponse_1 = require("../utils/appResponse");
 const emailVerificationCode_1 = require("../utils/emailVerificationCode");
 (0, dotenv_1.config)({ path: "./config.env" });
-const { JWT_EXPIRES_IN, JWT_SECRET, JWT_COOKIE_EXPIRES, ORIGIN_URL } = process.env;
+const { JWT_EXPIRES_IN, JWT_SECRET, JWT_COOKIE_EXPIRES, ORIGIN_URL, NODE_ENV, COOKIE_DOMAIN, } = process.env;
 if (!JWT_EXPIRES_IN || !JWT_SECRET || !JWT_COOKIE_EXPIRES || !ORIGIN_URL) {
     throw new appError_1.AppError("Kindly make sure that these env variable are defined", 400);
 }
+const isProduction = NODE_ENV === "production";
+const cookieExpiryDays = parseInt(JWT_COOKIE_EXPIRES, 10);
+if (Number.isNaN(cookieExpiryDays)) {
+    throw new appError_1.AppError("JWT_COOKIE_EXPIRES must be a valid number", 500);
+}
+const buildCookieOptions = () => {
+    const cookieOptions = {
+        expires: new Date(Date.now() + cookieExpiryDays * 24 * 60 * 60 * 1000),
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
+    };
+    if (COOKIE_DOMAIN) {
+        cookieOptions.domain = COOKIE_DOMAIN;
+    }
+    return cookieOptions;
+};
 const signInToken = async (id) => {
     return jsonwebtoken_1.default.sign({ id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN || "10d" });
 };
 const createAndSendTokenToUser = async (user, statusCode, message, res) => {
     const token = await signInToken(user._id);
-    const theCookieOptions = {
-        expires: new Date(Date.now() + parseInt(JWT_COOKIE_EXPIRES, 10) * 24 * 60 * 60 * 1000),
-        httpOnly: true,
-        sameSite: "none",
-        secure: true,
-    };
-    res.cookie("jwt", token, theCookieOptions);
+    res.cookie("jwt", token, buildCookieOptions());
     res.status(statusCode).json({
         status: "success",
         message,
@@ -72,13 +83,7 @@ exports.loginUser = (0, catchAsync_1.default)(async (req, res, next) => {
     const hasGoogleAccount = user.googleId ? true : false;
     // Only issue JWT if email is verified
     const token = await signInToken(user._id);
-    const theCookieOptions = {
-        expires: new Date(Date.now() + parseInt(JWT_COOKIE_EXPIRES, 10) * 24 * 60 * 60 * 1000),
-        httpOnly: true,
-        sameSite: "none",
-        secure: true,
-    };
-    res.cookie("jwt", token, theCookieOptions);
+    res.cookie("jwt", token, buildCookieOptions());
     res.status(200).json({
         status: "success",
         message: "Login successful",
@@ -328,13 +333,11 @@ exports.verifyUserEmail = (0, catchAsync_1.default)(async (req, res, next) => {
     return (0, appResponse_1.AppResponse)(res, 200, "success", "You have successfully verified your email. Kindly Login again", null);
 });
 exports.logoutUser = (0, catchAsync_1.default)(async (req, res, next) => {
-    const CookieOptions = {
-        secure: true,
-        httpOnly: true,
-        sameSite: "none",
-        expires: new Date(Date.now() + 1 * 1000),
+    const cookieOptions = {
+        ...buildCookieOptions(),
+        expires: new Date(Date.now() + 1000),
     };
-    res.cookie("jwt", "logout", CookieOptions);
+    res.cookie("jwt", "logout", cookieOptions);
     res.status(200).json({
         status: "success",
         message: "Logout successful",
@@ -348,13 +351,7 @@ exports.googleOAuthSuccess = (0, catchAsync_1.default)(async (req, res, next) =>
     // Check if this is a new user or existing user
     const isNewUser = !user.createdAt || (Date.now() - new Date(user.createdAt).getTime()) < 60000; // Within 1 minute
     const token = await signInToken(user._id);
-    const theCookieOptions = {
-        expires: new Date(Date.now() + parseInt(JWT_COOKIE_EXPIRES, 10) * 24 * 60 * 60 * 1000),
-        httpOnly: true,
-        sameSite: "none",
-        secure: true,
-    };
-    res.cookie("jwt", token, theCookieOptions);
+    res.cookie("jwt", token, buildCookieOptions());
     // Redirect to frontend with token in URL
     const frontendRedirectUrl = ORIGIN_URL;
     return res.redirect(frontendRedirectUrl);
