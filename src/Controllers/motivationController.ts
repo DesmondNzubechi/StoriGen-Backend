@@ -358,6 +358,7 @@ export const getAllMotivations = async (
 
     res.status(200).json({
       success: true,
+      length: motivations.length,
       data: motivations,
       pagination: {
         total,
@@ -443,6 +444,7 @@ export const getUserMotivations = async (
 
     res.status(200).json({
       success: true,
+      length: motivations.length,
       data: motivations,
       pagination: {
         total,

@@ -230,6 +230,7 @@ const getAllMotivations = async (req, res, next) => {
         ]);
         res.status(200).json({
             success: true,
+            length: motivations.length,
             data: motivations,
             pagination: {
                 total,
@@ -292,6 +293,7 @@ const getUserMotivations = async (req, res, next) => {
         ]);
         res.status(200).json({
             success: true,
+            length: motivations.length,
             data: motivations,
             pagination: {
                 total,
