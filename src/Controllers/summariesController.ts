@@ -10,9 +10,6 @@ type AuthenticatedRequest = Request & {
 };
 
 /**
- * Generate summary from an idea
- */ 
-/**
  * Generate summary from an idea using AIService
  */
 export const generateSummary = catchAsync<AuthenticatedRequest>(async (req, res, next) => {

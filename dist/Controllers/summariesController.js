@@ -9,9 +9,6 @@ const aiService_1 = require("../Services/aiService");
 const appError_1 = require("../errors/appError");
 const catchAsync_1 = __importDefault(require("../utils/catchAsync"));
 /**
- * Generate summary from an idea
- */
-/**
  * Generate summary from an idea using AIService
  */
 exports.generateSummary = (0, catchAsync_1.default)(async (req, res, next) => {

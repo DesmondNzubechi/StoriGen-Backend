@@ -202,51 +202,143 @@ Image Prompts:
         };
     }
     // Generate 5 viral motivational pieces
+    //   static async generateMotivations(
+    //     customizations: MotivationGenerationOptions
+    //   ): Promise<GeneratedMotivation[]> {
+    //     const { tone, type, themes, targetLength } = customizations;
+    //     const resolvedTone = tone || "Uplifting";
+    //     const resolvedType = type || "Affirmation";
+    //     const resolvedThemes =
+    //       themes.length > 0 ? themes.join(", ") : "resilience, perseverance";
+    //     const resolvedLength = targetLength > 0 ? targetLength : 300;
+    //     const prompt = `
+    // You are a motivational and inspirational writing expert.
+    // Generate exactly 5 unique ${resolvedType.toLowerCase()} pieces.
+    // Guidelines:
+    // - Tone: ${resolvedTone}
+    // - Themes to weave in: ${resolvedThemes}
+    // - Each piece must start with a compelling hook tailored to the tone, type, and themes.
+    // - Each piece must end with an empowering outro that reinforces the customization details.
+    // - Each piece must be roughly ${resolvedLength} words (±20%).
+    // - Write in engaging, modern language. Avoid clichés and make each piece actionable.
+    // - Use quotes from famous influential people, books, or movies to make each piece more engaging.
+    // - Ensure each piece feels distinct while sharing the requested tone and themes.
+    // - Provide a short caption (1 sentence) for each piece with exactly 5 relevant hashtags per piece.
+    // - Finish with a **social CTA** that says: “Follow us for more daily motivation. Like, comment, and share this video if it inspired you.”
+    // Return only valid JSON, no markdown, using this structure:
+    // {
+    //   "motivations": [
+    //     {
+    //       "content": "<motivation 1 text with hook at start and outro at end>",
+    //       "caption": "<caption>",
+    //     },
+    //     {
+    //       "content": "<motivation 2 text with hook at start and outro at end>",
+    //       "caption": "<caption>",
+    //     },
+    //     {
+    //       "content": "<motivation 3 text with hook at start and outro at end>",
+    //       "caption": "<caption>",
+    //     },
+    //      {
+    //       "content": "<motivation 3 text with hook at start and outro at end>",
+    //       "caption": "<caption>",
+    //     },
+    //      {
+    //       "content": "<motivation 3 text with hook at start and outro at end>",
+    //       "caption": "<caption>",
+    //     }
+    //   ]
+    // }
+    // `;
+    //     const response = await openai.chat.completions.create({
+    //       model: "gpt-4o-mini",
+    //       messages: [{ role: "user", content: prompt }],
+    //       temperature: 0.8,
+    //     });
+    //     const rawOutput = response.choices[0]?.message?.content || "";
+    //     const cleaned = rawOutput
+    //       .replace(/```json\s*/gi, "")
+    //       .replace(/```\s*/g, "")
+    //       .trim();
+    //     try {
+    //       const parsed = JSON.parse(cleaned);
+    //       if (
+    //         parsed &&
+    //         Array.isArray(parsed.motivations)
+    //       ) {
+    //         return parsed.motivations
+    //           .map(
+    //             (item: {
+    //               content?: string;
+    //               caption?: string;
+    //              // hashtags?: string[];
+    //             }) => ({
+    //               content: item?.content?.trim() ?? "",
+    //               caption: item?.caption?.trim() ?? "",
+    //               // hashtags: Array.isArray(item?.hashtags)
+    //               //   ? item!.hashtags.filter(
+    //               //       (tag): tag is string => typeof tag === "string"
+    //               //     )
+    //               //   : [],
+    //             })
+    //           )
+    //           .filter(
+    //             (item: GeneratedMotivation) => item.content.length > 0
+    //           );
+    //       }
+    //     } catch (error) {
+    //       console.error("Failed to parse AI motivations response:", cleaned);
+    //     }
+    //     return [];
+    //   }
+    // Generate 5 viral motivational pieces
     static async generateMotivations(customizations) {
         var _a, _b;
-        const { tone, type, themes, targetLength } = customizations;
-        const resolvedTone = tone || "Uplifting";
-        const resolvedType = type || "Affirmation";
-        const resolvedThemes = themes.length > 0 ? themes.join(", ") : "resilience, perseverance";
-        const resolvedLength = targetLength > 0 ? targetLength : 300;
+        // If no customizations provided, generate random ones
+        const { tone, type, themes, targetLength } = customizations || {};
+        const resolvedTone = tone;
+        const resolvedType = type;
+        const resolvedThemes = themes && themes.join(", ");
+        const resolvedLength = targetLength && targetLength > 0 ? targetLength : 300;
         const prompt = `
-You are a motivational and inspirational writing expert.
-Generate exactly 5 unique ${resolvedType.toLowerCase()} pieces.
+You are a world-class motivational and inspirational writer for TikTok.
+Generate exactly 5 unique, high-performing motivational content pieces optimized for short-form social media virality.
 
-Guidelines:
-- Tone: ${resolvedTone}
-- Themes to weave in: ${resolvedThemes}
-- Each piece must start with a compelling hook tailored to the tone, type, and themes.
-- Each piece must end with an empowering outro that reinforces the customization details.
-- Each piece must be roughly ${resolvedLength} words (±20%).
-- Write in engaging, modern language. Avoid clichés and make each piece actionable.
-- Use quotes from famous influential people, books, or movies to make each piece more engaging.
-- Ensure each piece feels distinct while sharing the requested tone and themes.
-- Provide a short caption (1 sentence) for each piece with exactly 5 relevant hashtags per piece.
-- Finish with a **social CTA** that says: “Follow us for more daily motivation. Like, comment, and share this video if it inspired you.”
+Instructions for each piece:
+1. Tone & Energy:
+   - Use the tone: ${resolvedTone}
+   - Write with engaging, modern language. Avoid clichés. Be actionable and inspiring.
 
-Return only valid JSON, no markdown, using this structure:
+2. Structure / Narrative Flow:
+   - Start with a compelling hook (1-2 sentences).
+   - Build a relatable scenario or challenge.
+   - Provide insight, reframing, or life lesson.
+   - Include quotes from famous people, books, or movies.
+   - End with an empowering outro that reinforces the main message.
+   - Use metaphors or sensory language where relevant.
+  
+
+3. Themes:
+   - Integrate these themes: ${resolvedThemes}
+
+4. Type / Archetype:
+   - Style this as: ${resolvedType}
+
+5. Length:
+   - Each piece should be roughly ${resolvedLength} words (±20%).
+
+6. Call-to-Action & Social Prompt:
+   - Include: "Like, Comment, and Follow for more — RulingYou"
+   - Provide a **short caption** (1 sentence) summarizing the piece and you must Include exactly 5 relevant hashtags directly in the caption, after the sentence.
+
+7. Output strictly as JSON using this structure:
+
 {
   "motivations": [
     {
-      "content": "<motivation 1 text with hook at start and outro at end>",
-      "caption": "<caption>",
-    },
-    {
-      "content": "<motivation 2 text with hook at start and outro at end>",
-      "caption": "<caption>",
-    },
-    {
-      "content": "<motivation 3 text with hook at start and outro at end>",
-      "caption": "<caption>",
-    },
-     {
-      "content": "<motivation 3 text with hook at start and outro at end>",
-      "caption": "<caption>",
-    },
-     {
-      "content": "<motivation 3 text with hook at start and outro at end>",
-      "caption": "<caption>",
+      "content": "<motivation text with hook and empowering outro>",
+     "caption": "<caption with hashtags included>"
     }
   ]
 }
@@ -257,14 +349,10 @@ Return only valid JSON, no markdown, using this structure:
             temperature: 0.8,
         });
         const rawOutput = ((_b = (_a = response.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) || "";
-        const cleaned = rawOutput
-            .replace(/```json\s*/gi, "")
-            .replace(/```\s*/g, "")
-            .trim();
+        const cleaned = rawOutput.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
         try {
             const parsed = JSON.parse(cleaned);
-            if (parsed &&
-                Array.isArray(parsed.motivations)) {
+            if (parsed && Array.isArray(parsed.motivations)) {
                 return parsed.motivations
                     .map((item) => {
                     var _a, _b, _c, _d;
@@ -272,9 +360,7 @@ Return only valid JSON, no markdown, using this structure:
                         content: (_b = (_a = item === null || item === void 0 ? void 0 : item.content) === null || _a === void 0 ? void 0 : _a.trim()) !== null && _b !== void 0 ? _b : "",
                         caption: (_d = (_c = item === null || item === void 0 ? void 0 : item.caption) === null || _c === void 0 ? void 0 : _c.trim()) !== null && _d !== void 0 ? _d : "",
                         // hashtags: Array.isArray(item?.hashtags)
-                        //   ? item!.hashtags.filter(
-                        //       (tag): tag is string => typeof tag === "string"
-                        //     )
+                        //   ? item.hashtags.filter((tag): tag is string => typeof tag === "string")
                         //   : [],
                     });
                 })

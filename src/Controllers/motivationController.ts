@@ -143,7 +143,7 @@ export const generateMotivation = async (
     }
 
     const sanitizedPayloads = generatedMotivations.map(
-      ({ content, caption }) => {
+      ({ content, caption}) => {
         const trimmedContent = content.trim();
         const trimmedCaption = caption.trim();
         const fallbackCaption =
