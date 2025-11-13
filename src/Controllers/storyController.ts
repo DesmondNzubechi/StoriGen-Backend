@@ -78,7 +78,7 @@ export const generateChapterController = async (req: AuthenticatedRequest, res: 
       });
     }
 
-    // ✅ Enforce sequential generation
+    //  Enforce sequential generation
     if (chapterNumber > 1) {
       const previousChapterExists = story.chapters.some(ch => ch.number === chapterNumber - 1);
       if (!previousChapterExists) {
