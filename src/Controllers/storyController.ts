@@ -1,166 +1,216 @@
 import { NextFunction, Request, Response } from 'express';
 import { Story } from '../Models/storyModel';
+import { Summary } from '../Models/Summary';
 import { AIService } from '../Services/aiService';
 import { AppError } from '../errors/appError';
+import catchAsync from '../utils/catchAsync';
 
 type AuthenticatedRequest = Request & {
   user?: any;
 };
 
 
-export const generateChapterController = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    const { storyId, summary, chapterNumber, totalChapters, wordsPerChapter, customizations = {} } = req.body;
+export const generateChapterController = catchAsync<AuthenticatedRequest>(async (req, res, next) => {
+  const { storyId, summary, summaryId, chapterNumber, totalChapters, wordsPerChapter, customizations = {} } = req.body;
 
-    if (!chapterNumber || !totalChapters) {
-      return res.status(400).json({
+  if (!chapterNumber || !totalChapters) {
+    return res.status(400).json({
+      success: false,
+      message: "chapterNumber and totalChapters are required",
+    });  
+  } 
+
+  const user = req.user;
+  if (!user) {
+    return next(new AppError("You are not authorised to access this route", 401));
+  }
+
+  let story: any;
+  let summaryContent: string;
+  let storyCustomizations: any = {};
+
+  // If storyId exists → fetch story, outline, and last chapter summary
+  if (storyId) {
+    story = await Story.findOne({ _id: storyId, user: user._id });
+    if (!story) {
+      return res.status(404).json({
         success: false,
-        message: "chapterNumber and totalChapters are required",
+        message: "Story not found",
       });
-    } 
- 
-    const user = req.user;
-
-    if (!user) {
-      return next(
-        new AppError("You are not authorised to access this route", 401)
-      );
     }
-
-    let story;
-
-    // If storyId exists → find the story
-    if (storyId) {
-      story = await Story.findOne({ _id: storyId, user: user._id });
-      if (!story) {
+    summaryContent = story.summary;
+    // Use stored customizations from story
+    storyCustomizations = { 
+      title: story.storyTitle,
+      characters: story.characters || [],
+      settings: story.settings || [],
+      themes: story.themes || [],
+      tone: story.tone || "dramatic",
+    }; 
+  } else {
+    // Handle summary input: either from summaryId (DB) or summary (direct)
+    if (summaryId) {
+      // Fetch summary from database
+      const summaryDoc = await Summary.findOne({ _id: summaryId, user: user._id });
+      if (!summaryDoc) {
         return res.status(404).json({
           success: false,
-          message: "Story not found",
+          message: "Summary not found",
         });
       }
+      summaryContent = summaryDoc.content;
+      // Extract customizations from stored summary
+      storyCustomizations = {
+        title: summaryDoc.title,
+        characters: summaryDoc.mainCharacters,
+        settings: [], // Can be extracted from summary content if needed
+        themes: summaryDoc.themes,
+        tone: customizations.tone || "dramatic", // Use from request or default
+      };
+    } else if (summary) {
+      // Use summary directly from request
+      summaryContent = summary;
+      // Use customizations from request
+      storyCustomizations = {
+        title: customizations.title,
+        characters: customizations.characters || [],
+        settings: customizations.settings ? (Array.isArray(customizations.settings) ? customizations.settings : [customizations.settings]) : [],
+        themes: customizations.themes ? (Array.isArray(customizations.themes) ? customizations.themes : [customizations.themes]) : [],
+        tone: customizations.tone || "dramatic",
+      };
     } else {
-      // Must be first chapter to create new story
-      if (chapterNumber !== 1) {
-        return res.status(400).json({
-          success: false,
-          message: "You must start with Chapter 1 when creating a new story",
-        });
-      }
-
-      if (!summary) {
-        return res.status(400).json({
-          success: false,
-          message: "Summary is required when creating a new story",
-        });
-      }
-
-      // Generate outline at creation
-      const outline = await AIService.generateOutline(summary, totalChapters);
-
-        if (!outline) {
-        return res.status(400).json({
-          success: false,
-          message: "outline is required when creating a new story",
-        });
-      }
-
-      console.log("The outline", outline)
-
-      story = await Story.create({
-        user: user._id,
-        prompt: summary, // Using summary as prompt since prompt is required
-        targetWords: wordsPerChapter * totalChapters, // Calculate total words
-        totalChapters: totalChapters,
-        summary,
-        outline,
-        chapters: [],
-        status: "in_progress",
-      });
-    }
-
-    //  Enforce sequential generation
-    if (chapterNumber > 1) {
-      const previousChapterExists = story.chapters.some(ch => ch.number === chapterNumber - 1);
-      if (!previousChapterExists) {
-        return res.status(400).json({
-          success: false,
-          message: `You must generate Chapter ${chapterNumber - 1} before generating Chapter ${chapterNumber}.`,
-        });
-      }
-    }
-
-    // Prevent duplicates
-    if (story.chapters.some(ch => ch.number === chapterNumber)) {
       return res.status(400).json({
         success: false,
-        message: `Chapter ${chapterNumber} already exists.`,
+        message: "Either summary, summaryId, or storyId is required",
       });
     }
-
-    // Get outline item for this chapter
-    const outlineItem = story?.outline[chapterNumber - 1];
-    if (!outlineItem) {
+    
+    // At this point, summaryContent is guaranteed to be assigned
+    if (!summaryContent) {
       return res.status(400).json({
         success: false,
-        message: `Outline for Chapter ${chapterNumber} not found.`,
+        message: "Summary content is required",
+      });
+    }
+    // Must be first chapter to create new story
+    if (chapterNumber !== 1) {
+      return res.status(400).json({
+        success: false,
+        message: "You must start with Chapter 1 when creating a new story",
       });
     }
 
-    // Prepare previous chapters for continuity
-    const previousChapters = story.chapters
-      .sort((a, b) => a.number - b.number)
-      .map(ch => ({
-        number: ch.number,
-        title: ch.title,
-        content: ch.content
-      }));
-
-    // Generate chapter
-    const chapter = await AIService.generateChapter(
-      story.summary,
-      chapterNumber,
-      story.totalChapters,
-      outlineItem?.description || `Chapter ${chapterNumber} storyline continuation`, // Pass the description string instead of the whole object
-      { 
-        previousChapters,
-        wordsPerChapter, 
-        ...customizations 
-      }
+    // Generate enhanced outline with metadata
+    const outlineResult = await AIService.generateEnhancedOutline(
+      summaryContent,
+      totalChapters,
+      storyCustomizations
     );
- 
-    console.log("The chapter is here", chapter)
 
-    // Append chapter
-    story.chapters.push({
-      number: chapterNumber,
-      title: chapter.title,
-      content: chapter.content,
-      wordCount: chapter.wordCount,
-      paragraphs : chapter.paragraphs
-    });
-
-    // Mark completed if last chapter
-    if (chapterNumber === story.totalChapters) {
-      story.status = "completed";
+    if (!outlineResult || !outlineResult.outline || outlineResult.outline.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Failed to generate outline",
+      });
     }
 
-    await story.save();
-
-    res.status(201).json({
-      success: true,
-      data: {
-        storyId: story._id,
-        chapter,
-      },
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error generating chapter",
-      error: error.message,
+    // Create new story with metadata
+    story = await Story.create({
+      user: user._id,
+      prompt: summaryContent,
+      targetWords: (wordsPerChapter || 500) * totalChapters,
+      totalChapters: totalChapters,
+      summary: summaryContent,
+      outline: outlineResult.outline,
+      storyTitle: outlineResult.metadata.title,
+      characters: outlineResult.metadata.characters,
+      settings: outlineResult.metadata.settings,
+      themes: outlineResult.metadata.themes,
+      tone: outlineResult.metadata.tone,
+      chapters: [],
+      status: "in_progress",
     });
   }
-};
+
+  // Enforce sequential generation
+  if (chapterNumber > 1) {
+    const previousChapterExists = story.chapters.some((ch: any) => ch.number === chapterNumber - 1);
+    if (!previousChapterExists) {
+      return res.status(400).json({
+        success: false,
+        message: `You must generate Chapter ${chapterNumber - 1} before generating Chapter ${chapterNumber}.`,
+      });
+    }
+  }
+
+  // Prevent duplicates
+  if (story.chapters.some((ch: any) => ch.number === chapterNumber)) {
+    return res.status(400).json({
+      success: false,
+      message: `Chapter ${chapterNumber} already exists.`,
+    });
+  }
+
+  // Get outline item for this chapter
+  const outlineItem = story.outline[chapterNumber - 1];
+  if (!outlineItem) {
+    return res.status(400).json({
+      success: false,
+      message: `Outline for Chapter ${chapterNumber} not found.`,
+    });
+  }
+
+  // Get last chapter summary for continuity (for subsequent chapters)
+  const lastChapter = story.chapters
+    .sort((a: any, b: any) => b.number - a.number)
+    .find((ch: any) => ch.number === chapterNumber - 1);
+  const lastChapterSummary = lastChapter?.summary;
+
+  // Generate chapter with outline + last chapter summary (not full story)
+  const chapter = await AIService.generateChapter(
+    summaryContent,
+    chapterNumber,
+    story.totalChapters,
+    outlineItem.description,
+    {
+      storyOutline: story.outline,
+      lastChapterSummary: lastChapterSummary,
+      wordsPerChapter: wordsPerChapter || 500,
+      storyMetadata: {
+        title: story.storyTitle,
+        characters: story.characters || [],
+        settings: story.settings || [],
+        themes: story.themes || [],
+        tone: story.tone,
+      },
+    }
+  );
+
+  // Append chapter with summary
+  story.chapters.push({
+    number: chapterNumber,
+    title: chapter.title,
+    content: chapter.content,
+    summary: chapter.summary, // Store chapter summary for continuity
+    wordCount: chapter.wordCount,
+    paragraphs: chapter.paragraphs,
+  });
+
+  // Mark completed if last chapter
+  if (chapterNumber === story.totalChapters) {
+    story.status = "completed";
+  }
+
+  await story.save();
+
+  res.status(201).json({
+    success: true,
+    data: {
+      storyId: story._id,
+      chapter,
+    },
+  });
+});
 
 /**
  * Get all chapters for a script
@@ -326,11 +376,17 @@ export const generateViralTitle = async (req: AuthenticatedRequest, res: Respons
       });
     }
 
-    // Generate full story text for context
-    const fullStory = story.chapters.map(ch => ch.content).join("\n\n") || story.summary || story.prompt;
-
-    // Generate single viral title
-    const viralTitle = await AIService.generateViralTitle(fullStory);
+    // Generate single viral title using story outline and metadata (not full story)
+    const viralTitle = await AIService.generateViralTitle({
+      storyOutline: story.outline,
+      storyMetadata: {
+        title: story.storyTitle,
+        characters: story.characters || [],
+        settings: story.settings || [],
+        themes: story.themes || [],
+        tone: story.tone,
+      },
+    });
 
     // Update story - store in youtubeAssets.titles array (first element)
     if (!story.youtubeAssets.titles) {
@@ -376,11 +432,17 @@ export const generateViralDescription = async (req: AuthenticatedRequest, res: R
       });
     }
 
-    // Generate full story text for AI context
-    const fullStory = story.chapters.map(ch => ch.content).join("\n\n") || story.summary || story.prompt;
-
-    // Generate description using AI service
-    const descriptionResponse = await AIService.generateDescription(fullStory);
+    // Generate description using story outline and metadata (not full story)
+    const descriptionResponse = await AIService.generateDescription({
+      storyOutline: story.outline,
+      storyMetadata: {
+        title: story.storyTitle,
+        characters: story.characters || [],
+        settings: story.settings || [],
+        themes: story.themes || [],
+        tone: story.tone,
+      },
+    });
 
     // Clean and format response (optional)
     const description = descriptionResponse.trim();
@@ -427,11 +489,19 @@ export const generateViralThumbnailPrompts = async (req: AuthenticatedRequest, r
       });
     }
 
-    // Generate full story text for context
-    const fullStory = story.chapters.map(ch => ch.content).join("\n\n") || story.summary || story.prompt;
-
-    // Generate thumbnail prompt
-    const thumbnailPrompt = await AIService.generateThumbnailPrompt(fullStory);
+    // Generate thumbnail prompt using story outline and metadata (not full story)
+    const videoTitle = story.youtubeAssets.titles?.[0] || story.storyTitle; // Use first title if available, otherwise story title
+    const thumbnailPrompt = await AIService.generateThumbnailPrompt({
+      storyOutline: story.outline,
+      storyMetadata: {
+        title: story.storyTitle,
+        characters: story.characters || [],
+        settings: story.settings || [],
+        themes: story.themes || [],
+        tone: story.tone,
+      },
+      videoTitle: videoTitle,
+    });
 
     // Update story
     story.youtubeAssets.thumbnailPrompt = thumbnailPrompt;
@@ -474,18 +544,17 @@ export const generateViralShortsHooks = async (req: AuthenticatedRequest, res: R
       });
     }
 
-    // Generate full story text for context
-    const fullStory = story.chapters.map(ch => ch.content).join("\n\n") || story.summary || story.prompt;
-
-    // Generate shorts hooks
-    const hooksResponse = await AIService.generateShortsHooks(fullStory);
-    
-    // Parse the response to extract individual hooks
-    const hooks = hooksResponse
-      .split(/\n|\r|\r\n/g)
-      .map((h: string) => h.replace(/^[-*\d\.\)\s]+/, "").trim())
-      .filter(Boolean)
-      .slice(0, 5); // Limit to 5 hooks
+    // Generate shorts hooks using story outline and metadata (not full story)
+    const hooks = await AIService.generateShortsHooks({
+      storyOutline: story.outline,
+      storyMetadata: {
+        title: story.storyTitle,
+        characters: story.characters || [],
+        settings: story.settings || [],
+        themes: story.themes || [],
+        tone: story.tone,
+      },
+    });
 
     // Update story
     story.youtubeAssets.shortsHooks = hooks;
@@ -528,31 +597,23 @@ export const generateSEOKeywords = async (req: AuthenticatedRequest, res: Respon
       });
     }
 
-    // Generate full story text for context
-    const fullStory = story.chapters.map(ch => ch.content).join("\n\n") || story.summary || story.prompt;
-
-    // Generate SEO keywords and hashtags
-    const seoResponse = await AIService.generateSEOKeywords(fullStory);
+    // Generate SEO keywords and hashtags using story outline and metadata (not full story)
+    const seoResult = await AIService.generateSEOKeywords({
+      storyOutline: story.outline,
+      storyMetadata: {
+        title: story.storyTitle,
+        characters: story.characters || [],
+        settings: story.settings || [],
+        themes: story.themes || [],
+        tone: story.tone,
+      },
+    });
     
-    // Parse the response to extract keywords and hashtags
-    const lines = seoResponse.split(/\n|\r|\r\n/g).filter(Boolean);
-    
-    // Extract keywords (usually listed first)
-    const keywords = lines
-      .filter(line => !line.includes('#') && line.trim().length > 0)
-      .map(line => line.replace(/^[-*\d\.\)\s]+/, "").trim())
-      .filter(Boolean)
-      .slice(0, 15); // Limit to 15 keywords
+    const { keywords, hashtags } = seoResult;
 
-    // Extract hashtags (lines starting with #)
-    const hashtags = lines
-      .filter(line => line.includes('#'))
-      .map(line => line.replace(/^[-*\d\.\)\s]+/, "").trim())
-      .filter(Boolean)
-      .slice(0, 10); // Limit to 10 hashtags
-
-    // Update story
+    // Update story with keywords and hashtags
     story.youtubeAssets.hashtags = hashtags;
+    story.youtubeAssets.keywords = keywords;
     await story.save();
 
     res.status(200).json({
@@ -602,14 +663,108 @@ export const generateChapterImagePrompts = async (req: AuthenticatedRequest, res
       });
     }
 
-    // Generate image prompts for the chapter
-    const imagePromptsResponse = await AIService.generateImagePrompts(chapter.content, story.summary || story.prompt);
-    
+    // Get stored character details for consistency
+    const storedCharacterDetails = (story.characterDetails || []).map((char: any) => ({
+      name: char.name,
+      age: char.age,
+      attire: char.attire,
+      facialFeatures: char.facialFeatures,
+      physicalTraits: char.physicalTraits,
+      otherDetails: char.otherDetails,
+    }));
+
+    // Generate image prompts for the chapter using outline, metadata, and stored character details
+    const imagePromptsResponse = await AIService.generateImagePrompts(chapter.content, {
+      storyOutline: story.outline,
+      storyMetadata: {
+        title: story.storyTitle,
+        characters: story.characters || [],
+        settings: story.settings || [],
+        themes: story.themes || [],
+        tone: story.tone,
+      },
+      storedCharacterDetails: storedCharacterDetails,
+      chapterNumber: parseInt(chapterNumber),
+    });
+     
     // Parse the response to extract individual prompts
     const prompts = imagePromptsResponse
       .split(/\n|\r|\r\n/g)
       .map((p: string) => p.replace(/^[-*\d\.\)\s]+/, "").trim())
       .filter(Boolean);
+
+    // Extract character details from the generated prompts
+    const characterNames = story.characters || [];
+    if (characterNames.length > 0 && prompts.length > 0) {
+      const extractedDetails = await AIService.extractCharacterDetails(
+        prompts,
+        characterNames,
+        storedCharacterDetails
+      );
+
+      // Update character details in story
+      // Only update if new details are found or if there's a meaningful story reason
+      const currentChapterNum = parseInt(chapterNumber);
+      const outlineItem = story.outline.find((item: any) => item.number === currentChapterNum);
+      const hasPlotChange = outlineItem?.purpose === 'climax' || outlineItem?.purpose === 'resolution';
+      
+      extractedDetails.forEach((newChar) => {
+        const existingIndex = story.characterDetails.findIndex(
+          (char: any) => char.name.toLowerCase() === newChar.name.toLowerCase()
+        );
+
+        if (existingIndex >= 0) {
+          // Check if update is needed (only update if new details are provided or plot requires change)
+          const existing = story.characterDetails[existingIndex];
+          let needsUpdate = false;
+          let updateReason = '';
+
+          // Check each field for updates
+          if (newChar.age && newChar.age !== existing.age) {
+            needsUpdate = true;
+            updateReason = hasPlotChange ? 'Plot development' : 'New detail found';
+          }
+          if (newChar.attire && newChar.attire !== existing.attire) {
+            needsUpdate = true;
+            updateReason = hasPlotChange ? 'Plot-driven attire change' : 'New detail found';
+          }
+          if (newChar.facialFeatures && newChar.facialFeatures !== existing.facialFeatures) {
+            needsUpdate = true;
+            updateReason = hasPlotChange ? 'Plot development' : 'New detail found';
+          }
+          if (newChar.physicalTraits && newChar.physicalTraits !== existing.physicalTraits) {
+            needsUpdate = true;
+            updateReason = hasPlotChange ? 'Plot-driven transformation' : 'New detail found';
+          }
+          if (newChar.otherDetails && newChar.otherDetails !== existing.otherDetails) {
+            needsUpdate = true;
+            updateReason = hasPlotChange ? 'Plot development' : 'New detail found';
+          }
+
+          // Only update if there's a meaningful reason
+          if (needsUpdate && (hasPlotChange || !existing.age || !existing.attire || !existing.facialFeatures)) {
+            story.characterDetails[existingIndex] = {
+              ...existing,
+              ...newChar,
+              lastUpdatedChapter: currentChapterNum,
+              updateReason: updateReason,
+            };
+          }
+        } else {
+          // Add new character details
+          story.characterDetails.push({
+            name: newChar.name,
+            age: newChar.age,
+            attire: newChar.attire,
+            facialFeatures: newChar.facialFeatures,
+            physicalTraits: newChar.physicalTraits,
+            otherDetails: newChar.otherDetails,
+            lastUpdatedChapter: currentChapterNum,
+            updateReason: 'Initial character introduction',
+          });
+        }
+      });
+    }
 
     // Create chapter image prompts entry
     const chapterImagePrompts = {
@@ -619,7 +774,7 @@ export const generateChapterImagePrompts = async (req: AuthenticatedRequest, res
 
     // Remove existing prompts for this chapter if any
     story.chapterImagePrompts = story.chapterImagePrompts.filter(
-      cip => cip.chapter !== parseInt(chapterNumber)
+      (cip: any) => cip.chapter !== parseInt(chapterNumber)
     );
 
     // Add new prompts

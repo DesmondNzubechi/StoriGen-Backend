@@ -86,6 +86,7 @@ interface IChapter {
   number: number;
   content: string;
   title?: string;
+  summary?: string; // Short summary for continuity
   paragraphs: IParagraph[];
   wordCount: number;
 }
@@ -102,6 +103,7 @@ interface IYouTubeAssets {
   description?: string;
   thumbnailPrompt?: string;
   hashtags?: string[];
+  keywords?: string[];
   shortsHooks: any[]
 }
 
@@ -113,8 +115,15 @@ export interface IStory extends Document {
   outline: IOutlineItem[];
   characterProfile?: string;
   summary: string;
+  // Story metadata for outline generation
+  storyTitle?: string;
+  characters?: string[];
+  settings?: string[];
+  themes?: string[];
+  tone?: string;
   chapters: IChapter[];
   chapterImagePrompts: IChapterImagePrompts[];
+  characterDetails: ICharacterDetails[]; // Stored character visual details for consistency
   youtubeAssets: IYouTubeAssets;
   status: "in_progress" | "chapters_complete" | "assets_complete" | "completed";
   createdAt: Date;
@@ -124,6 +133,17 @@ export interface IStory extends Document {
 interface IChapterImagePrompts {
   chapter: number;            // which chapter these prompts belong to
   prompts: string[];          // one prompt per paragraph
+}
+
+export interface ICharacterDetails {
+  name: string;
+  age?: string;
+  attire?: string;
+  facialFeatures?: string;
+  physicalTraits?: string;
+  otherDetails?: string;
+  lastUpdatedChapter?: number; // Track when details were last updated
+  updateReason?: string; // Reason for update (plot development, outline change, etc.)
 }
 
 const paragraphSchema = new Schema<IParagraph>({
@@ -136,6 +156,17 @@ const chapterImagePromptsSchema = new Schema<IChapterImagePrompts>({
   prompts: [{ type: String, required: true }],
 });
 
+const characterDetailsSchema = new Schema<ICharacterDetails>({
+  name: { type: String, required: true, trim: true },
+  age: { type: String, trim: true },
+  attire: { type: String, trim: true },
+  facialFeatures: { type: String, trim: true },
+  physicalTraits: { type: String, trim: true },
+  otherDetails: { type: String, trim: true },
+  lastUpdatedChapter: { type: Number },
+  updateReason: { type: String, trim: true },
+});
+
 const outlineItemSchema = new Schema<IOutlineItem>({
   number: { type: Number, required: true },
   purpose: { type: String, required: true },
@@ -146,6 +177,7 @@ const chapterSchema = new Schema<IChapter>({
   number: { type: Number, required: true },
   title: { type: String },
   content: { type: String, required: true },
+  summary: { type: String }, // Short summary for continuity
   wordCount: { type: Number },
   paragraphs: [paragraphSchema],
 });
@@ -156,6 +188,7 @@ const youtubeAssetsSchema = new Schema<IYouTubeAssets>({
   description: { type: String },
   thumbnailPrompt: { type: String },
   hashtags: [{ type: String }],
+  keywords: [{ type: String }],
   shortsHooks: [{type: String}]
 });
 
@@ -168,8 +201,15 @@ const storySchema = new Schema<IStory>(
     outline: [outlineItemSchema],
     summary: { type: String, required: true },
     characterProfile: { type: String },
+    // Story metadata for outline generation
+    storyTitle: { type: String },
+    characters: [{ type: String }],
+    settings: [{ type: String }],
+    themes: [{ type: String }],
+    tone: { type: String },
     chapters: [chapterSchema],
    chapterImagePrompts: [chapterImagePromptsSchema],
+    characterDetails: [characterDetailsSchema], // Stored character visual details
     youtubeAssets: {
       type: youtubeAssetsSchema, default: {
       synopsis: "",
@@ -177,6 +217,7 @@ const storySchema = new Schema<IStory>(
   description: "",
   thumbnailPrompt: "", 
         hashtags: [],
+  keywords: [],
   shortsHooks: []
     } },
     status: {
