@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
 import { Summary, ISummary } from '../Models/Summary';
-import { Idea } from '../Models/Idea';
 import { AIService } from '../Services/aiService';
 import { AppError } from '../errors/appError';
 import catchAsync from '../utils/catchAsync';
@@ -10,50 +9,61 @@ type AuthenticatedRequest = Request & {
 };
 
 /**
- * Generate summary from an idea using AIService
+ * Generate summaries using AIService
+ * Returns 10 unique summaries based on customization parameters
  */
 export const generateSummary = catchAsync<AuthenticatedRequest>(async (req, res, next) => {
-  const { idea, customizations = {} } = req.body;
-  const { tone, style, targetAudience, niche, themes, settings } = customizations;
+  const {tone, targetAudience, niche, themes, settings } = req.body;
+ 
   const user = req.user;
 
   if (!user) {
     return next(new AppError("You are not authorised to access this route", 401));
   }
 
-  if (!idea) {
-    return res.status(400).json({
-      success: false,
-      message: 'Idea is required',
-    });
-  }
-
-  const summaryData = await AIService.generateViralSummary(idea.content, {
+  const summariesData = await AIService.generateViralSummary(
     tone,
-    style,
     targetAudience,
     niche,
     themes,
     settings,
-  });
+  );
 
-  if (!summaryData || typeof summaryData !== 'object') {
+  if (!summariesData || !Array.isArray(summariesData) || summariesData.length === 0) {
     return res.status(500).json({
       success: false,
-      message: 'AI did not return a valid summary object',
-      raw: summaryData,
+      message: 'AI did not return valid summaries',
+      raw: summariesData,
     });
   }
 
-  const summary = await Summary.create({
-    user: user._id,
-    idea,
-    ...summaryData,
+  // Map the summary data directly to the Summary model structure
+  const summariesToSave = summariesData.map((summaryItem: any) => {
+    // Use themes from summary or fallback to provided themes
+    const summaryThemes = summaryItem.themes || (themes ? themes.split(',').map((t: string) => t.trim()) : []);
+    
+    return {
+      user: user._id,
+      title: summaryItem.title || "Untitled Story",
+      content: summaryItem.content || "",
+      niche: summaryItem.niche || niche || "story",
+      mainCharacters: Array.isArray(summaryItem.mainCharacters) 
+        ? summaryItem.mainCharacters 
+        : (summaryItem.mainCharacters ? [summaryItem.mainCharacters] : []),
+      conflict: summaryItem.conflict || "A central conflict unfolds",
+      resolution: summaryItem.resolution || "The story reaches its conclusion",
+      moralLesson: summaryItem.moralLesson || "Every story teaches us something valuable",
+      themes: summaryThemes.length > 0 ? summaryThemes : ["storytelling"],
+    };
   });
+
+  // Save all summaries
+  const savedSummaries = await Summary.insertMany(summariesToSave);
 
   res.status(201).json({
     success: true,
-    data: summary,
+    count: savedSummaries.length,
+    data: savedSummaries,
   });
 });
 
@@ -73,7 +83,6 @@ export const getSummaries = catchAsync<AuthenticatedRequest>(async (req, res, ne
   const skip = (Number(page) - 1) * Number(limit);
 
   const summaries = await Summary.find({ user: user._id })
-    .populate('idea', 'title theme setting')
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(Number(limit));
@@ -96,8 +105,7 @@ export const getSummaryById = catchAsync<AuthenticatedRequest>(async (req, res, 
 
   const { id } = req.params;
 
-  const summary = await Summary.findOne({ _id: id, user: user._id })
-    .populate('idea', 'title theme setting characters');
+  const summary = await Summary.findOne({ _id: id, user: user._id });
 
   if (!summary) {
     return res.status(404).json({
@@ -129,7 +137,7 @@ export const updateSummary = catchAsync<AuthenticatedRequest>(async (req, res, n
     { _id: id, user: user._id },
     updateData,
     { new: true, runValidators: true }
-  ).populate('idea', 'title theme setting');
+  );
 
   if (!summary) {
     return res.status(404).json({

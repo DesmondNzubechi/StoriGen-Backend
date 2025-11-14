@@ -852,27 +852,26 @@ Generate 5 scripts following these rules.
   static async generateViralIdeas(
     customizations: PromptCustomization
   ): Promise<string[]> {
-    const tone = customizations.tone || "cinematic";
-    const style = customizations.style || "viral";
-    const audience = customizations.targetAudience || "adults";
-    const niche = customizations.niche || "African folktale";
+    const tone = customizations.tone;
+    const style = customizations.style;
+    const audience = customizations.targetAudience ;
+    const niche = customizations.niche;
     const themes =
-      customizations.themes ||
-      "palace drama, kindness, wisdom, curses, betrayal, forbidden love, ancestral wrath, hidden secrets";
+      customizations.themes 
     const settings =
-      customizations.settings || "village, palace, forest, or kingdom";
+      customizations.settings ;
 
-    const prompt = `Generate 5 raw story ideas for a ${niche} YouTube storytelling video.
+    const prompt = `Generate 2 raw story ideas for a ${niche} YouTube storytelling video.
 - Must be inspired by viral themes: ${themes}.
 - Rooted in typical ${niche} settings (${settings}).
 - Each idea must include a shocking twist or mystery that hooks viewers immediately.
-- Write each idea in 3–4 sentences as a clear story seed.
+- Write each idea in 1 sentence as a clear story seed.
 
 Tone: ${tone}
 Style: ${style}
 Target Audience: ${audience}
 
-Format: Numbered list (1–5), each with a brief title + 3–4 sentence description.`;
+Format: Numbered list (1–2), each with a brief title + 1 sentence description.`;
 
     // Call your AI model here
     const response = await openai.chat.completions.create({
@@ -891,56 +890,63 @@ Format: Numbered list (1–5), each with a brief title + 3–4 sentence descript
 
   //Generate Viral Summaries
   static async generateViralSummary(
-    ideaContent: string,
-    customizations: PromptCustomization
+    tone: string, targetAudience:string, niche:string, themes:string, settings: string 
   ): Promise<any> {
-    const tone = customizations.tone; //|| 'cinematic';
-    const style = customizations.style; //|| 'viral';
-    const audience = customizations.targetAudience; //|| 'general audience';
-    const niche = customizations.niche; //|| 'storytelling';
-    const themes = customizations.themes; //|| 'betrayal, curse, ancestral wrath, forbidden destiny';
-    const settings = customizations.settings; //|| 'village, palace, forest, kingdom';
+    const prompt = `Generate 10 unique summaries of ${niche} stories. Each summary should be in 2–3 engaging paragraphs that highlight the main characters, the central conflict, and the resolution. Make each summary vivid and easy to follow, ending with the wisdom or moral lesson the story teaches.
 
-    const prompt = `Summarize this ${niche} story idea into a viral-style YouTube storytelling description:
-"${ideaContent}"
+Customization Details:
+- Story Type/Niche: ${niche}
+- Tone: ${tone || "dramatic"}
+- Style:  "viral"
+- Target Audience: ${targetAudience || "general audience"}
+- Themes: ${themes || "conflict, resolution, wisdom"}
+- Settings: ${settings || "various locations fitting the niche"}
 
-Rules (adapt dynamically based on customizations):
-- 5 - 10 sentences total.
-- Hook must align with the selected tone (“dramatic”, “mysterious”, “emotional”, etc.).
-- Include cultural/setting elements if provided: ${settings}.
-- Emphasize key themes: ${themes}.
-- Highlight target audience (${audience}) by making the language accessible to them.
-- Maintain style: ${style}.
-- End with suspense or curiosity, without revealing the full twist.
-
-Tone: ${tone}
-Style: ${style}
-Target Audience: ${audience}
-Niche: ${niche}
+Requirements for each summary:
+1. **Main Characters**: Clearly introduce the main characters with their roles and motivations.
+2. **Central Conflict**: Describe the primary challenge, obstacle, or problem the characters face.
+3. **Resolution**: Explain how the conflict is resolved or how the story concludes.
+4. **Moral Lesson/Wisdom**: End each summary with the wisdom or moral lesson the story teaches.
+5. **Vividness**: Use descriptive, engaging language that brings the story to life.
+6. **Length**: Each summary should be 2–3 paragraphs (approximately 150–250 words).
+7. **Uniqueness**: Each of the 10 summaries should be completely different stories within the ${niche} genre.
 
 ⚠️ Return ONLY valid JSON. 
 ⚠️ Do NOT include markdown code blocks, backticks, or explanations. 
-Output must be exactly this JSON object:
+Output must be exactly this JSON array:
 
-{
-  "title": "Generated title based on niche and theme",
-  "content": "Full viral summary (3–5 sentences)",
-  "hook": "First dramatic/mysterious sentence",
-  "conflict": "Main conflict (derived from themes)",
-  "niche": "${niche}",
-  "resolution": "Resolution teaser (no spoilers)",
-  "culturalElements": ["Extracted from settings or niche"],
-  "viralElements": ["Hook, twist, suspense, mystery"]
-}`;
+[
+  {
+    "title": "Story title 1",
+    "content": "2-3 paragraph summary with characters, conflict, resolution, and moral lesson",
+    "mainCharacters": ["Character 1", "Character 2"],
+    "conflict": "Brief description of the central conflict",
+    "resolution": "How the conflict is resolved",
+    "moralLesson": "The wisdom or moral lesson taught by this story",
+    "niche": "${niche}",
+    "themes": ["theme1", "theme2"]
+  },
+  {
+    "title": "Story title 2",
+    "content": "2-3 paragraph summary with characters, conflict, resolution, and moral lesson",
+    "mainCharacters": ["Character 1", "Character 2"],
+    "conflict": "Brief description of the central conflict",
+    "resolution": "How the conflict is resolved",
+    "moralLesson": "The wisdom or moral lesson taught by this story",
+    "niche": "${niche}",
+    "themes": ["theme1", "theme2"]
+  }
+  // ... continue for all 10 summaries
+]`;
 
     // Call AI
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
+      temperature: 0.8,
     });
 
-    const rawOutput = response?.choices[0]?.message?.content || "{}";
+    const rawOutput = response?.choices[0]?.message?.content || "[]";
 
     // Parse safely
     try {
@@ -950,25 +956,37 @@ Output must be exactly this JSON object:
         .replace(/```\s*/g, "")
         .trim();
 
-      return JSON.parse(cleaned);
+      const parsed = JSON.parse(cleaned);
+      
+      // Ensure we return an array
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+      
+      // If it's a single object, wrap it in an array
+      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+        return [parsed];
+      }
+      
+      return parsed;
     } catch (err) {
       console.error(
         "Failed to parse AI viral summary response as JSON:",
         rawOutput
       );
-      return {
+      // Return fallback structure as array
+      return [{
         error: "Invalid JSON returned by AI",
         raw: rawOutput,
-        // Provide fallback structure
         title: "Generated Story",
         content: rawOutput,
-        hook: "A mysterious tale unfolds...",
+        mainCharacters: ["Unknown"],
         conflict: "The central conflict",
-        niche: customizations.niche || "African folktale",
         resolution: "How it ends",
-        culturalElements: ["African culture", "Traditional values"],
-        viralElements: ["Dramatic twist", "Emotional depth"],
-      };
+        moralLesson: "The wisdom of the story",
+        niche: niche || "story",
+        themes: themes ? themes.split(",").map(t => t.trim()) : ["conflict", "resolution"],
+      }];
     }
   }
 

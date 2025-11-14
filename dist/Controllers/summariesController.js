@@ -9,44 +9,47 @@ const aiService_1 = require("../Services/aiService");
 const appError_1 = require("../errors/appError");
 const catchAsync_1 = __importDefault(require("../utils/catchAsync"));
 /**
- * Generate summary from an idea using AIService
+ * Generate summaries using AIService
+ * Returns 10 unique summaries based on customization parameters
  */
 exports.generateSummary = (0, catchAsync_1.default)(async (req, res, next) => {
-    const { idea, customizations = {} } = req.body;
-    const { tone, style, targetAudience, niche, themes, settings } = customizations;
+    const { tone, targetAudience, niche, themes, settings } = req.body;
     const user = req.user;
     if (!user) {
         return next(new appError_1.AppError("You are not authorised to access this route", 401));
     }
-    if (!idea) {
-        return res.status(400).json({
-            success: false,
-            message: 'Idea is required',
-        });
-    }
-    const summaryData = await aiService_1.AIService.generateViralSummary(idea.content, {
-        tone,
-        style,
-        targetAudience,
-        niche,
-        themes,
-        settings,
-    });
-    if (!summaryData || typeof summaryData !== 'object') {
+    const summariesData = await aiService_1.AIService.generateViralSummary(tone, targetAudience, niche, themes, settings);
+    if (!summariesData || !Array.isArray(summariesData) || summariesData.length === 0) {
         return res.status(500).json({
             success: false,
-            message: 'AI did not return a valid summary object',
-            raw: summaryData,
+            message: 'AI did not return valid summaries',
+            raw: summariesData,
         });
     }
-    const summary = await Summary_1.Summary.create({
-        user: user._id,
-        idea,
-        ...summaryData,
+    // Map the summary data directly to the Summary model structure
+    const summariesToSave = summariesData.map((summaryItem) => {
+        // Use themes from summary or fallback to provided themes
+        const summaryThemes = summaryItem.themes || (themes ? themes.split(',').map((t) => t.trim()) : []);
+        return {
+            user: user._id,
+            title: summaryItem.title || "Untitled Story",
+            content: summaryItem.content || "",
+            niche: summaryItem.niche || niche || "story",
+            mainCharacters: Array.isArray(summaryItem.mainCharacters)
+                ? summaryItem.mainCharacters
+                : (summaryItem.mainCharacters ? [summaryItem.mainCharacters] : []),
+            conflict: summaryItem.conflict || "A central conflict unfolds",
+            resolution: summaryItem.resolution || "The story reaches its conclusion",
+            moralLesson: summaryItem.moralLesson || "Every story teaches us something valuable",
+            themes: summaryThemes.length > 0 ? summaryThemes : ["storytelling"],
+        };
     });
+    // Save all summaries
+    const savedSummaries = await Summary_1.Summary.insertMany(summariesToSave);
     res.status(201).json({
         success: true,
-        data: summary,
+        count: savedSummaries.length,
+        data: savedSummaries,
     });
 });
 /**
@@ -60,7 +63,6 @@ exports.getSummaries = (0, catchAsync_1.default)(async (req, res, next) => {
     const { page = 1, limit = 10 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
     const summaries = await Summary_1.Summary.find({ user: user._id })
-        .populate('idea', 'title theme setting')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(Number(limit));
@@ -78,8 +80,7 @@ exports.getSummaryById = (0, catchAsync_1.default)(async (req, res, next) => {
         return next(new appError_1.AppError("You are not authorised to access this route", 401));
     }
     const { id } = req.params;
-    const summary = await Summary_1.Summary.findOne({ _id: id, user: user._id })
-        .populate('idea', 'title theme setting characters');
+    const summary = await Summary_1.Summary.findOne({ _id: id, user: user._id });
     if (!summary) {
         return res.status(404).json({
             success: false,
@@ -101,7 +102,7 @@ exports.updateSummary = (0, catchAsync_1.default)(async (req, res, next) => {
     }
     const { id } = req.params;
     const updateData = req.body;
-    const summary = await Summary_1.Summary.findOneAndUpdate({ _id: id, user: user._id }, updateData, { new: true, runValidators: true }).populate('idea', 'title theme setting');
+    const summary = await Summary_1.Summary.findOneAndUpdate({ _id: id, user: user._id }, updateData, { new: true, runValidators: true });
     if (!summary) {
         return res.status(404).json({
             success: false,
