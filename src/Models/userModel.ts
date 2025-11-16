@@ -2,7 +2,7 @@ import mongoose, { Schema, models, Document } from "mongoose";
 import validator from "validator";
 import bcryptjs from "bcryptjs";
 import crypto from "crypto";
-
+ 
 // 1️⃣ Define the IUser interface
 export interface IUser extends Document {
   fullName: string;

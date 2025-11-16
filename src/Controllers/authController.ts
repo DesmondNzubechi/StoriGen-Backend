@@ -187,16 +187,27 @@ export const updateMe = catchAsync<AuthenticatedRequest>(async (req, res, next) 
     return next(new AppError("Kindly provide the required field", 400));
   }
 
+  // Check if email is already taken by another user
+  if (newEmail !== user.email) {
+    const existingUser = await User.findOne({ email: newEmail });
+    if (existingUser && existingUser._id.toString() !== user._id.toString()) {
+      return next(
+        new AppError("This email is already taken by another user.", 400)
+      );
+    }
+  }
+
+  // Use _id instead of id, and ensure we're updating the correct user
   const updateUser = await User.findByIdAndUpdate(
-    user.id,
-    { newEmail, newFullName },
+    user._id,
+    { email: newEmail, fullName: newFullName },
     {
       runValidators: true,
       new: true,
     }
   );
 
-  if (!updateMe) {
+  if (!updateUser) {
     return next(
       new AppError("Could not update user info. Please try again", 400)
     );
