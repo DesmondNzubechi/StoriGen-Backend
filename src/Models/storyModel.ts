@@ -97,6 +97,11 @@ interface IOutlineItem {
   description: string;
 }
  
+interface IShortsHookAsset {
+  hook: string;
+  imagePrompts: string[];
+}
+
 interface IYouTubeAssets {
   synopsis?: string;
   titles?: string[];
@@ -104,7 +109,7 @@ interface IYouTubeAssets {
   thumbnailPrompt?: string;
   hashtags?: string[];
   keywords?: string[];
-  shortsHooks: any[]
+  shortsHooks: IShortsHookAsset[];
 }
 
 export interface IStory extends Document {
@@ -121,6 +126,7 @@ export interface IStory extends Document {
   settings?: string[];
   themes?: string[];
   tone?: string;
+  niche?: string;
   chapters: IChapter[];
   chapterImagePrompts: IChapterImagePrompts[];
   characterDetails: ICharacterDetails[]; // Stored character visual details for consistency
@@ -172,6 +178,11 @@ const outlineItemSchema = new Schema<IOutlineItem>({
   purpose: { type: String, required: true },
   description: { type: String, required: true },
 });
+
+const shortsHookAssetSchema = new Schema({
+  hook: { type: String, required: true },
+  imagePrompts: [{ type: String, required: true }],
+}, { _id: false });
  
 const chapterSchema = new Schema<IChapter>({
   number: { type: Number, required: true },
@@ -189,7 +200,7 @@ const youtubeAssetsSchema = new Schema<IYouTubeAssets>({
   thumbnailPrompt: { type: String },
   hashtags: [{ type: String }],
   keywords: [{ type: String }],
-  shortsHooks: [{type: String}]
+  shortsHooks: [shortsHookAssetSchema],
 });
 
 const storySchema = new Schema<IStory>(
@@ -206,7 +217,8 @@ const storySchema = new Schema<IStory>(
     characters: [{ type: String }],
     settings: [{ type: String }],
     themes: [{ type: String }],
-    tone: { type: String },
+  tone: { type: String },
+  niche: { type: String },
     chapters: [chapterSchema],
    chapterImagePrompts: [chapterImagePromptsSchema],
     characterDetails: [characterDetailsSchema], // Stored character visual details

@@ -63,10 +63,11 @@ exports.getSummaries = (0, catchAsync_1.default)(async (req, res, next) => {
     const { page = 1, limit = 10 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
     const summaries = await Summary_1.Summary.find({ user: user._id })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(Number(limit));
+        .sort({ createdAt: -1 });
+    // .skip(skip)
+    // .limit(Number(limit));
     res.status(200).json({
+        count: summaries.length,
         success: true,
         data: summaries,
     });

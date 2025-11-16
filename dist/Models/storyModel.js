@@ -77,15 +77,30 @@ const chapterImagePromptsSchema = new mongoose_1.Schema({
     chapter: { type: Number, required: true },
     prompts: [{ type: String, required: true }],
 });
+const characterDetailsSchema = new mongoose_1.Schema({
+    name: { type: String, required: true, trim: true },
+    age: { type: String, trim: true },
+    attire: { type: String, trim: true },
+    facialFeatures: { type: String, trim: true },
+    physicalTraits: { type: String, trim: true },
+    otherDetails: { type: String, trim: true },
+    lastUpdatedChapter: { type: Number },
+    updateReason: { type: String, trim: true },
+});
 const outlineItemSchema = new mongoose_1.Schema({
     number: { type: Number, required: true },
     purpose: { type: String, required: true },
     description: { type: String, required: true },
 });
+const shortsHookAssetSchema = new mongoose_1.Schema({
+    hook: { type: String, required: true },
+    imagePrompts: [{ type: String, required: true }],
+}, { _id: false });
 const chapterSchema = new mongoose_1.Schema({
     number: { type: Number, required: true },
     title: { type: String },
     content: { type: String, required: true },
+    summary: { type: String }, // Short summary for continuity
     wordCount: { type: Number },
     paragraphs: [paragraphSchema],
 });
@@ -95,7 +110,8 @@ const youtubeAssetsSchema = new mongoose_1.Schema({
     description: { type: String },
     thumbnailPrompt: { type: String },
     hashtags: [{ type: String }],
-    shortsHooks: [{ type: String }]
+    keywords: [{ type: String }],
+    shortsHooks: [shortsHookAssetSchema],
 });
 const storySchema = new mongoose_1.Schema({
     user: { type: mongoose_1.Schema.Types.ObjectId, ref: "User" },
@@ -105,8 +121,16 @@ const storySchema = new mongoose_1.Schema({
     outline: [outlineItemSchema],
     summary: { type: String, required: true },
     characterProfile: { type: String },
+    // Story metadata for outline generation
+    storyTitle: { type: String },
+    characters: [{ type: String }],
+    settings: [{ type: String }],
+    themes: [{ type: String }],
+    tone: { type: String },
+    niche: { type: String },
     chapters: [chapterSchema],
     chapterImagePrompts: [chapterImagePromptsSchema],
+    characterDetails: [characterDetailsSchema], // Stored character visual details
     youtubeAssets: {
         type: youtubeAssetsSchema, default: {
             synopsis: "",
@@ -114,6 +138,7 @@ const storySchema = new mongoose_1.Schema({
             description: "",
             thumbnailPrompt: "",
             hashtags: [],
+            keywords: [],
             shortsHooks: []
         }
     },

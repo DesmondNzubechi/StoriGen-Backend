@@ -293,73 +293,85 @@ Image Prompts:
     //     return [];
     //   }
     // Generate 5 viral motivational pieces
-    // static async generateMotivations(
-    //   customizations?: MotivationGenerationOptions
-    // ): Promise<GeneratedMotivation[]> {
-    //   // If no customizations provided, generate random ones
-    //   const { tone, type, themes, targetLength } = customizations || {};
-    //   const resolvedTone = tone;
-    //   const resolvedType = type;
-    //   const resolvedThemes = themes &&  themes.join(", ");
-    //   const resolvedLength = targetLength && targetLength > 0 ? targetLength : 300;
-    //   const prompt = `
-    // You are a world-class motivational and inspirational writer for TikTok.
-    // Generate exactly 5 unique, high-performing motivational content pieces optimized for short-form social media virality.
-    // Instructions for each piece:
-    // 1. Tone & Energy:
-    //    - Use the tone: ${resolvedTone}
-    //    - Write with engaging, modern language. Avoid clichés. Be actionable and inspiring.
-    // 2. Structure / Narrative Flow:
-    //    - Start with a compelling hook (1-2 sentences).
-    //    - Build a relatable scenario or challenge.
-    //    - Provide insight, reframing, or life lesson.
-    //    - Include quotes from famous people, books, or movies.
-    //    - End with an empowering outro that reinforces the main message.
-    //    - Use metaphors or sensory language where relevant.
-    // 3. Themes:
-    //    - Integrate these themes: ${resolvedThemes}
-    // 4. Type / Archetype:
-    //    - Style this as: ${resolvedType}
-    // 5. Length:
-    //    - Each piece should be roughly ${resolvedLength} words (±20%).
-    // 6. Call-to-Action & Social Prompt:
-    //    - Include: "Like, Comment, and Follow for more — RulingYou"
-    //    - Provide a **short caption** (1 sentence) summarizing the piece and you must Include exactly 5 relevant hashtags directly in the caption, after the sentence.
-    // 7. Output strictly as JSON using this structure:
-    // {
-    //   "motivations": [
-    //     {
-    //       "content": "<motivation text with hook and empowering outro>",
-    //      "caption": "<caption with hashtags included>"
-    //     }
-    //   ]
-    // }
-    // `;
-    //   const response = await openai.chat.completions.create({
-    //     model: "gpt-4o-mini",
-    //     messages: [{ role: "user", content: prompt }],
-    //     temperature: 0.8,
-    //   });
-    //   const rawOutput = response.choices[0]?.message?.content || "";
-    //   const cleaned = rawOutput.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
-    //   try {
-    //     const parsed = JSON.parse(cleaned);
-    //     if (parsed && Array.isArray(parsed.motivations)) {
-    //       return parsed.motivations
-    //         .map((item: { content?: string; caption?: string }) => ({
-    //           content: item?.content?.trim() ?? "",
-    //           caption: item?.caption?.trim() ?? "",
-    //           // hashtags: Array.isArray(item?.hashtags)
-    //           //   ? item.hashtags.filter((tag): tag is string => typeof tag === "string")
-    //           //   : [],
-    //         }))
-    //         .filter((item: GeneratedMotivation) => item.content.length > 0);
-    //     }
-    //   } catch (error) {
-    //     console.error("Failed to parse AI motivations response:", cleaned);
-    //   }
-    //   return [];
-    // }
+    static async generateMotivations(customizations) {
+        var _a, _b;
+        // If no customizations provided, generate random ones
+        const { tone, type, themes, targetLength } = customizations || {};
+        const resolvedTone = tone;
+        const resolvedType = type;
+        const resolvedThemes = themes && themes.join(", ");
+        const resolvedLength = targetLength && targetLength > 0 ? targetLength : 300;
+        const prompt = `
+You are a world-class motivational and inspirational writer for TikTok.
+Generate exactly 5 unique, high-performing motivational content pieces optimized for short-form social media virality.
+
+Instructions for each piece:
+1. Tone & Energy:
+   - Use the tone: ${resolvedTone}
+   - Write with engaging, modern language. Avoid clichés. Be actionable and inspiring.
+
+2. Structure / Narrative Flow:
+   - Start with a compelling hook (1-2 sentences).
+   - Build a relatable scenario or challenge.
+   - Provide insight, reframing, or life lesson.
+   - Include quotes from famous people, books, or movies.
+   - End with an empowering outro that reinforces the main message.
+   - Use metaphors or sensory language where relevant.
+  
+
+3. Themes:
+   - Integrate these themes: ${resolvedThemes}
+
+4. Type / Archetype:
+   - Style this as: ${resolvedType}
+
+5. Length: 
+   - Each piece should be roughly ${resolvedLength} words (±20%).
+
+6. Call-to-Action & Social Prompt:
+   - Include: "Like, Comment, and Follow for more — RulingYou"
+   - Provide a **short caption** (1 sentence) summarizing the piece and you must Include exactly 5 relevant hashtags directly in the caption, after the sentence.
+
+7. Output strictly as JSON using this structure:
+
+{
+  "motivations": [
+    {
+      "content": "<motivation text with hook and empowering outro>",
+     "caption": "<caption with hashtags included>"
+    }
+  ]
+}
+`;
+        const response = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.8,
+        });
+        const rawOutput = ((_b = (_a = response.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) || "";
+        const cleaned = rawOutput.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+        try {
+            const parsed = JSON.parse(cleaned);
+            if (parsed && Array.isArray(parsed.motivations)) {
+                return parsed.motivations
+                    .map((item) => {
+                    var _a, _b, _c, _d;
+                    return ({
+                        content: (_b = (_a = item === null || item === void 0 ? void 0 : item.content) === null || _a === void 0 ? void 0 : _a.trim()) !== null && _b !== void 0 ? _b : "",
+                        caption: (_d = (_c = item === null || item === void 0 ? void 0 : item.caption) === null || _c === void 0 ? void 0 : _c.trim()) !== null && _d !== void 0 ? _d : "",
+                        // hashtags: Array.isArray(item?.hashtags)
+                        //   ? item.hashtags.filter((tag): tag is string => typeof tag === "string")
+                        //   : [],
+                    });
+                })
+                    .filter((item) => item.content.length > 0);
+            }
+        }
+        catch (error) {
+            console.error("Failed to parse AI motivations response:", cleaned);
+        }
+        return [];
+    }
     //   static async generateMotivations(
     //   customizations?: MotivationGenerationOptions
     // ): Promise<GeneratedMotivation[]> {
@@ -534,102 +546,85 @@ Image Prompts:
     //   }
     //   return [];
     // }
-    static async generateMotivations(customizations) {
-        var _a, _b;
-        const { tone, type, themes, targetLength } = customizations || {};
-        const resolvedTone = tone;
-        const resolvedType = type;
-        const resolvedThemes = themes && themes.join(", ");
-        const resolvedLength = targetLength && targetLength > 0 ? targetLength : 300;
-        const prompt = `
-You are an expert viral motivational and inspirational writer for TikTok, Instagram Reels, YouTube Shorts, and Facebook Reels.  
-Generate **5 unique motivational voiceover scripts** that are fully viral-ready.  
-
-Requirements for each script:
-
-1. **Hook (0–3s)**: 
-   - Begin with a bold micro-hook or emotionally charged question.  
-   - Immediately capture attention with a pattern-interrupt or relatable struggle.  
-
-2. **Relatable Struggle (3–10s)**:  
-   - Describe a common challenge or inner conflict with emotional language.  
-   - Keep sentences short and rhythmical for voiceover pacing.  
-
-3. **Mindset Shift / Turning Point (10–25s)**:  
-   - Reframe the struggle into an opportunity.  
-   - Include **one credible quote** (e.g., Jim Rohn, Tony Robbins, Les Brown, Elon Musk, Steve Jobs, Bill Gates, Mark Zuckerberg, Jeff Bezos, Jensen Huang, Warren Buffett, Rockefeller, Albert Einstein, Nikola Tesla, Donald Trump, Richard Branson, Oprah Winfrey, Michelle Obama, Dwayne “The Rock” Johnson, Simon Sinek, Sheryl Sandberg, Maya Angelou, Rumi, Confucius, Lao Tzu, Mahatma Gandhi, Malcolm X, Martin Luther King Jr., Stephen Covey, Ray Dalio, Naval Ravikant, Peter Drucker, Benjamin Franklin, Thomas Edison, Henry Ford, J.K. Rowling, Charles Darwin, Socrates, Aristotle, Leonardo da Vinci, Coco Chanel, Steve Wozniak, Plato, Fred Smith, Howard Schultz, Mark Cuban, Tony Hsieh.) naturally.  
-
-4. **Empowering Build / Climax (25–40s)**:  
-   - Use **punchy, rhythmic lines** for rewatchability (e.g., short commands or repeated phrases).  
-   - Encourage immediate action or self-belief.  
-
-5. **Emotional Echo Ending (40–60s)**:  
-   - End with a memorable, uplifting line that reinforces empowerment.  
-   - Include **CTA echo** before the platform call-to-action.  
-
-6. **Call-to-Action (Final Line)**:  
-   - Must always end with: “Like, Comment, and Follow for more — RulingYou.”  
-
-7. **Voiceover Formatting**:  
-   - Use **ellipses (...)** and **line breaks** to create natural pauses.  
-   - Do **not** include music, visual, or stage directions.  
-   - Text should read naturally aloud.  
-
-8. **Caption**:  
-   - One concise sentence summarizing the script’s core message.  
-   - Include **exactly 5 hashtags** — at least one trending (#Motivation2025).  
-   - Emotional, actionable, and discovery-focused.  
-
-9. **Tone / Style / Themes**:  
-   - Tone: ${resolvedTone}  
-   - Type: ${resolvedType}  
-   - Themes: ${resolvedThemes}  
-   - Length: roughly ${resolvedLength} words (±20%)  
-
----
-
-**Output strictly as JSON**:
-
-{
-  "motivations": [
-    {
-      "content": "<voiceover-ready script with natural pacing, micro-hooks, punchy climax lines, and emotional echo ending>",
-      "caption": "<1-sentence summary with 5 hashtags>"
-    }
-  ]
-}
-
-Generate 5 scripts following these rules.
-`;
-        const response = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
-            messages: [{ role: "user", content: prompt }],
-            temperature: 0.9,
-        });
-        const rawOutput = ((_b = (_a = response.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) || "";
-        const cleaned = rawOutput
-            .replace(/```json\s*/gi, "")
-            .replace(/```\s*/g, "")
-            .trim();
-        try {
-            const parsed = JSON.parse(cleaned);
-            if (parsed && Array.isArray(parsed.motivations)) {
-                return parsed.motivations
-                    .map((item) => {
-                    var _a, _b, _c, _d;
-                    return ({
-                        content: (_b = (_a = item === null || item === void 0 ? void 0 : item.content) === null || _a === void 0 ? void 0 : _a.trim()) !== null && _b !== void 0 ? _b : "",
-                        caption: (_d = (_c = item === null || item === void 0 ? void 0 : item.caption) === null || _c === void 0 ? void 0 : _c.trim()) !== null && _d !== void 0 ? _d : "",
-                    });
-                })
-                    .filter((item) => item.content.length > 0);
-            }
-        }
-        catch (error) {
-            console.error("Failed to parse AI motivations response:", cleaned);
-        }
-        return [];
-    }
+    //   static async generateMotivations(
+    //   customizations?: MotivationGenerationOptions
+    // ): Promise<GeneratedMotivation[]> {
+    //   const { tone, type, themes, targetLength } = customizations || {};
+    //   const resolvedTone = tone;
+    //   const resolvedType = type;
+    //   const resolvedThemes = themes && themes.join(", ");
+    //   const resolvedLength = targetLength && targetLength > 0 ? targetLength : 300;
+    //   const prompt = `
+    // You are an expert viral motivational and inspirational writer for TikTok, Instagram Reels, YouTube Shorts, and Facebook Reels.
+    // Generate **5 unique motivational voiceover scripts** that are fully viral-ready.
+    // Requirements for each script:
+    // 1. **Hook (0–3s)**:
+    //    - Begin with a bold micro-hook or emotionally charged question.
+    //    - Immediately capture attention with a pattern-interrupt or relatable struggle.
+    // 2. **Relatable Struggle (3–10s)**:
+    //    - Describe a common challenge or inner conflict with emotional language.
+    //    - Keep sentences short and rhythmical for voiceover pacing.
+    // 3. **Mindset Shift / Turning Point (10–25s)**:
+    //    - Reframe the struggle into an opportunity.
+    //    - Include **one credible quote** (e.g., Jim Rohn, Tony Robbins, Les Brown, Elon Musk, Steve Jobs, Bill Gates, Mark Zuckerberg, Jeff Bezos, Jensen Huang, Warren Buffett, Rockefeller, Albert Einstein, Nikola Tesla, Donald Trump, Richard Branson, Oprah Winfrey, Michelle Obama, Dwayne “The Rock” Johnson, Simon Sinek, Sheryl Sandberg, Maya Angelou, Rumi, Confucius, Lao Tzu, Mahatma Gandhi, Malcolm X, Martin Luther King Jr., Stephen Covey, Ray Dalio, Naval Ravikant, Peter Drucker, Benjamin Franklin, Thomas Edison, Henry Ford, J.K. Rowling, Charles Darwin, Socrates, Aristotle, Leonardo da Vinci, Coco Chanel, Steve Wozniak, Plato, Fred Smith, Howard Schultz, Mark Cuban, Tony Hsieh.) naturally.
+    // 4. **Empowering Build / Climax (25–40s)**:
+    //    - Use **punchy, rhythmic lines** for rewatchability (e.g., short commands or repeated phrases).
+    //    - Encourage immediate action or self-belief.
+    // 5. **Emotional Echo Ending (40–60s)**:
+    //    - End with a memorable, uplifting line that reinforces empowerment.
+    //    - Include **CTA echo** before the platform call-to-action.
+    // 6. **Call-to-Action (Final Line)**:
+    //    - Must always end with: “Like, Comment, and Follow for more — RulingYou.”
+    // 7. **Voiceover Formatting**:
+    //    - Use **ellipses (...)** and **line breaks** to create natural pauses.
+    //    - Do **not** include music, visual, or stage directions.
+    //    - Text should read naturally aloud.
+    // 8. **Caption**:
+    //    - One concise sentence summarizing the script’s core message.
+    //    - Include **exactly 5 hashtags** — at least one trending (#Motivation2025).
+    //    - Emotional, actionable, and discovery-focused.
+    // 9. **Tone / Style / Themes**:
+    //    - Tone: ${resolvedTone}
+    //    - Type: ${resolvedType}
+    //    - Themes: ${resolvedThemes}
+    //    - Length: roughly ${resolvedLength} words (±20%)
+    // ---
+    // **Output strictly as JSON**:
+    // {
+    //   "motivations": [
+    //     {
+    //       "content": "<voiceover-ready script with natural pacing, micro-hooks, punchy climax lines, and emotional echo ending>",
+    //       "caption": "<1-sentence summary with 5 hashtags>"
+    //     }
+    //   ]
+    // }
+    // Generate 5 scripts following these rules.
+    // `;
+    //   const response = await openai.chat.completions.create({
+    //     model: "gpt-4o-mini",
+    //     messages: [{ role: "user", content: prompt }],
+    //     temperature: 0.9,
+    //   });
+    //   const rawOutput = response.choices[0]?.message?.content || "";
+    //   const cleaned = rawOutput
+    //     .replace(/```json\s*/gi, "")
+    //     .replace(/```\s*/g, "")
+    //     .trim();
+    //   try {
+    //     const parsed = JSON.parse(cleaned);
+    //     if (parsed && Array.isArray(parsed.motivations)) {
+    //       return parsed.motivations
+    //         .map((item: { content?: string; caption?: string }) => ({
+    //           content: item?.content?.trim() ?? "",
+    //           caption: item?.caption?.trim() ?? "",
+    //         }))
+    //         .filter((item: GeneratedMotivation) => item.content.length > 0);
+    //     }
+    //   } catch (error) {
+    //     console.error("Failed to parse AI motivations response:", cleaned);
+    //   }
+    //   return [];
+    // }
     // Generate 10 viral story ideas
     static async generateViralIdeas(customizations) {
         var _a, _b;
@@ -666,7 +661,7 @@ Format: Numbered list (1–2), each with a brief title + 1 sentence description.
     //Generate Viral Summaries
     static async generateViralSummary(tone, targetAudience, niche, themes, settings) {
         var _a, _b;
-        const prompt = `Generate 10 unique summaries of ${niche} stories. Each summary should be in 2–3 engaging paragraphs that highlight the main characters, the central conflict, and the resolution. Make each summary vivid and easy to follow, ending with the wisdom or moral lesson the story teaches.
+        const prompt = `Generate 5 unique summaries of ${niche} stories. Each summary should be in 2–3 engaging paragraphs that highlight the main characters, the central conflict, and the resolution. Make each summary vivid and easy to follow, ending with the wisdom or moral lesson the story teaches.
 
 Customization Details:
 - Story Type/Niche: ${niche}
@@ -683,7 +678,7 @@ Requirements for each summary:
 4. **Moral Lesson/Wisdom**: End each summary with the wisdom or moral lesson the story teaches.
 5. **Vividness**: Use descriptive, engaging language that brings the story to life.
 6. **Length**: Each summary should be 2–3 paragraphs (approximately 150–250 words).
-7. **Uniqueness**: Each of the 10 summaries should be completely different stories within the ${niche} genre.
+7. **Uniqueness**: Each of the 5 summaries should be completely different stories within the ${niche} genre.
 
 ⚠️ Return ONLY valid JSON. 
 ⚠️ Do NOT include markdown code blocks, backticks, or explanations. 
@@ -693,24 +688,24 @@ Output must be exactly this JSON array:
   {
     "title": "Story title 1",
     "content": "2-3 paragraph summary with characters, conflict, resolution, and moral lesson",
-    "mainCharacters": ["Character 1", "Character 2"],
+    "mainCharacters": [],
     "conflict": "Brief description of the central conflict",
     "resolution": "How the conflict is resolved",
     "moralLesson": "The wisdom or moral lesson taught by this story",
     "niche": "${niche}",
-    "themes": ["theme1", "theme2"]
+    "themes": []
   },
   {
     "title": "Story title 2",
     "content": "2-3 paragraph summary with characters, conflict, resolution, and moral lesson",
-    "mainCharacters": ["Character 1", "Character 2"],
+    "mainCharacters": [],
     "conflict": "Brief description of the central conflict",
     "resolution": "How the conflict is resolved",
     "moralLesson": "The wisdom or moral lesson taught by this story",
     "niche": "${niche}",
-    "themes": ["theme1", "theme2"]
+    "themes": []
   }
-  // ... continue for all 10 summaries
+  // ... continue for all 5 summaries
 ]`;
         // Call AI
         const response = await openai.chat.completions.create({
@@ -754,96 +749,149 @@ Output must be exactly this JSON array:
                 }];
         }
     }
-    //Generate Outlines
-    static async generateOutline(summaryContent, totalChapters) {
+    //Generate Enhanced Outlines with Story Metadata
+    static async generateEnhancedOutline(summaryContent, totalChapters, customizations = {}) {
         var _a, _b;
+        const { title, characters, settings, themes, tone } = customizations;
         const prompt = `
-  Break this summary into a structured outline for ${totalChapters} chapters:
-  "${summaryContent}"
+Generate a comprehensive story outline and metadata based on this summary:
+"${summaryContent}"
 
-  Rules:
-  - Each chapter must have:
-    - number
-    - purpose (setup, rising, climax, resolution)
-    - description (2–3 sentences max).
-  - Ensure logical progression: setup → conflict rising → climax → resolution.
-  - The final chapter must clearly resolve the conflict.
-  
-  Return JSON strictly:
-  [
-    { "number": 1, "purpose": "setup", "description": "..." },
-    { "number": 2, "purpose": "rising", "description": "..." },
+Requirements:
+1. Extract or generate:
+   - A compelling story title
+   - Main characters (names and brief roles)
+   - Settings/locations where the story takes place
+   - Key themes explored in the story
+   - Story tone (dramatic, mysterious, emotional, etc.)
+
+2. Create a detailed outline for ${totalChapters} chapters:
+   - Each chapter must have: number, purpose (setup, rising, climax, resolution), and a detailed description (2-3 sentences)
+   - Ensure logical progression: setup → conflict rising → climax → resolution
+   - The final chapter must clearly resolve the conflict
+   - Make the outline very solid and detailed for consistent chapter generation
+
+${title ? `- Use this title: ${title}` : '- Generate a compelling title based on the summary'}
+${characters && characters.length > 0 ? `- Main characters: ${characters.join(', ')}` : '- Extract main characters from the summary'}
+${settings && settings.length > 0 ? `- Settings: ${settings.join(', ')}` : '- Extract settings from the summary'}
+${themes && themes.length > 0 ? `- Themes: ${themes.join(', ')}` : '- Extract themes from the summary'}
+${tone ? `- Tone: ${tone}` : '- Determine tone from the summary'}
+
+Return JSON strictly:
+{
+  "title": "Story title",
+  "characters": ["Character 1", "Character 2"],
+  "settings": ["Setting 1", "Setting 2"],
+  "themes": ["Theme 1", "Theme 2"],
+  "tone": "dramatic",
+  "outline": [
+    { "number": 1, "purpose": "setup", "description": "Detailed description..." },
+    { "number": 2, "purpose": "rising", "description": "Detailed description..." },
     ...
   ]
-  `;
+}
+`;
         const response = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [{ role: "user", content: prompt }],
+            temperature: 0.7,
         });
-        const content = ((_b = (_a = response.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) || "[]";
+        const content = ((_b = (_a = response.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) || "{}";
         // Clean the response by removing markdown code blocks if present
         const cleanedContent = content
             .replace(/```json\s*/gi, "")
             .replace(/```\s*/g, "")
             .trim();
         try {
-            return JSON.parse(cleanedContent);
+            const parsed = JSON.parse(cleanedContent);
+            return {
+                outline: parsed.outline || [],
+                metadata: {
+                    title: parsed.title || title || "Untitled Story",
+                    characters: parsed.characters || characters || [],
+                    settings: parsed.settings || settings || [],
+                    themes: parsed.themes || themes || [],
+                    tone: parsed.tone || tone || "dramatic",
+                },
+            };
         }
         catch (error) {
             console.error("Failed to parse AI outline response as JSON:", cleanedContent);
             // Fallback: return a basic structure if JSON parsing fails
-            return Array.from({ length: totalChapters }, (_, i) => ({
-                number: i + 1,
-                purpose: i === 0 ? "setup" : i === totalChapters - 1 ? "resolution" : "rising",
-                description: `Chapter ${i + 1} content based on: ${summaryContent.slice(0, 100)}...`,
-            }));
+            return {
+                outline: Array.from({ length: totalChapters }, (_, i) => ({
+                    number: i + 1,
+                    purpose: i === 0 ? "setup" : i === totalChapters - 1 ? "resolution" : "rising",
+                    description: `Chapter ${i + 1} content based on: ${summaryContent.slice(0, 100)}...`,
+                })),
+                metadata: {
+                    title: title || "Untitled Story",
+                    characters: characters || [],
+                    settings: settings || [],
+                    themes: themes || [],
+                    tone: tone || "dramatic",
+                },
+            };
         }
     }
-    //Generate Chapters
+    //Generate Outlines (legacy function for backward compatibility)
+    // static async generateOutline(
+    //   summaryContent: string,
+    //   totalChapters: number
+    // ): Promise<
+    //   {
+    //     number: number;
+    //     purpose: string;
+    //     description: string;
+    //   }[]
+    // > {
+    //   const result = await this.generateEnhancedOutline(summaryContent, totalChapters);
+    //   return result.outline;
+    // }
+    //Generate Chapters with Summary
     static async generateChapter(summaryContent, chapterNumber, totalChapters, outlineItem, options = {}) {
         var _a, _b;
-        const { previousChapters = [], wordsPerChapter = 500 } = options;
-        // Include ALL previous chapters in full (no truncation)
-        const previousText = previousChapters.length > 0
-            ? previousChapters
-                .map((ch) => `Chapter ${ch.number}: ${ch.title}\n${ch.content}`)
-                .join("\n\n")
-            : "None yet (this is the beginning of the story).";
-        // Extract character information from previous chapters for better continuity
-        const characterContext = previousChapters.length > 0
-            ? `\n📌 ESTABLISHED CHARACTERS (from previous chapters): Use these exact same characters and their relationships:\n` +
-                previousChapters
-                    .map((ch) => {
-                    // Extract character names and relationships mentioned in each chapter
-                    const content = ch.content;
-                    const characterMatches = content.match(/(?:Prince|Princess|King|Queen|Chief|Warrior|Villager|Elder|Mother|Father|Son|Daughter|Brother|Sister|Friend|Enemy|Servant|Messenger)\s+[A-Z][a-z]+/g) || [];
-                    return `Chapter ${ch.number} characters: ${[
-                        ...new Set(characterMatches),
-                    ].join(", ")}`;
-                })
-                    .join("\n")
-            : "";
+        const { storyOutline = [], lastChapterSummary, wordsPerChapter = 500, storyMetadata = {} } = options;
+        const { title, characters = [], settings = [], themes = [], tone, niche } = storyMetadata;
+        // For subsequent chapters (chapterNumber > 1), ONLY use outline + last chapter summary
+        // For first chapter, use full summary
+        const contextForContinuity = chapterNumber > 1 && lastChapterSummary
+            ? `📌 Previous Chapter Summary (for continuity):
+${lastChapterSummary}
+
+📌 Full Story Outline (for context):
+${storyOutline.map(item => `Chapter ${item.number} (${item.purpose}): ${item.description}`).join('\n')}`
+            : chapterNumber === 1
+                ? `📌 Story Summary (this defines the main characters, family, and central conflict — NEVER alter them):
+${summaryContent}`
+                : `📌 Story Summary (this defines the main characters, family, and central conflict — NEVER alter them):
+${summaryContent}
+
+📌 Full Story Outline (for context):
+${storyOutline.map(item => `Chapter ${item.number} (${item.purpose}): ${item.description}`).join('\n')}`;
         const isFinalChapter = chapterNumber === totalChapters;
         const prompt = `
 You are writing Chapter ${chapterNumber} of a ${totalChapters}-chapter continuous story.
 
-📌 Story Summary (this defines the main characters, family, and central conflict — NEVER alter them):
-${summaryContent}
+${contextForContinuity}
 
-📌 Previous Chapters (you MUST continue directly from these events — maintain characters, setting, and unresolved plotlines):
-${previousText}${characterContext}
+${title ? `📌 Story Title: ${title}` : ''}
+${characters.length > 0 ? `📌 Main Characters: ${characters.join(', ')}` : ''}
+${settings.length > 0 ? `📌 Settings: ${settings.join(', ')}` : ''}
+${themes.length > 0 ? `📌 Themes: ${themes.join(', ')}` : ''}
+${tone ? `📌 Tone: ${tone}` : ''}
 
 📌 Current Chapter Outline:
 ${outlineItem || `Chapter ${chapterNumber} storyline continuation`}
 
 CRITICAL CONTINUITY RULES:
 - Write around ${wordsPerChapter} words.
-- MAINTAIN THE SAME CHARACTERS AND FAMILY from the summary and previous chapters. Do NOT introduce new families or main characters unless absolutely necessary for the plot.
-- If you must introduce a new character, make it a minor supporting character (like a messenger, neighbor, or servant) who serves the existing main characters' story.
+- MAINTAIN THE SAME CHARACTERS from the story metadata and previous chapters. Do NOT introduce new main characters unless absolutely necessary for the plot.
+- If you must introduce a new character, make it a minor supporting character who serves the existing main characters' story.
 - Keep the same setting/location unless the plot explicitly requires movement.
 - Continue the same storyline, conflicts, and relationships established in previous chapters.
-- Reference specific events, conversations, and character interactions from previous chapters to maintain continuity.
-- Use the same character names, relationships, and family dynamics established in the summary and previous chapters.
+- Reference specific events from the previous chapter summary to maintain continuity.
+- Use the same character names, relationships, and dynamics established in the story metadata.
 - Do NOT reset or restart the story with different characters or families.
 
 STORYTELLING REQUIREMENTS:
@@ -852,12 +900,14 @@ STORYTELLING REQUIREMENTS:
             ? "Since this is the FINAL CHAPTER, resolve the central conflict and end the story on a satisfying note."
             : "End with a suspenseful transition to the next chapter."}
 - Do NOT summarize; write full narrative text with multiple paragraphs.
+- CRITICAL: You MUST generate a concise 2-3 sentence summary of this chapter. This summary will be used for continuity in the next chapter generation.
 - VERY IMPORTANT: Always return the result in strict JSON format, exactly as specified below.
 
 Example JSON format to follow:
 {
   "title": "Chapter title",
   "content": "Full chapter text",
+  "summary": "A concise 2-3 sentence summary of this chapter for continuity (MUST be included)",
   "paragraphs": [{"text": "Paragraph 1"}, {"text": "Paragraph 2"}],
   "wordCount": number,
   "number": chapter number
@@ -873,231 +923,599 @@ Example JSON format to follow:
             .replace(/```\s*/g, "")
             .trim();
         try {
-            return JSON.parse(cleanedContent);
+            const parsed = JSON.parse(cleanedContent);
+            // Ensure summary is included - this is critical for continuity
+            if (!parsed.summary || parsed.summary.trim().length === 0) {
+                // Generate a summary from the content if not provided by AI
+                const sentences = parsed.content.split(/[.!?]+/).filter((s) => s.trim().length > 0);
+                parsed.summary = sentences.slice(0, 3).join('. ').trim() + (sentences.length > 0 ? '.' : '');
+                console.warn(`Chapter ${chapterNumber} summary was not provided by AI, generated fallback summary`);
+            }
+            return parsed;
         }
         catch (error) {
             console.error("Failed to parse AI response as JSON:", cleanedContent);
             // Fallback: return a basic structure if JSON parsing fails
+            const fallbackContent = cleanedContent;
             return {
                 title: `Chapter ${chapterNumber}`,
-                content: cleanedContent,
-                paragraphs: [{ text: cleanedContent }],
-                wordCount: cleanedContent.split(" ").length,
+                content: fallbackContent,
+                summary: fallbackContent.split('.').slice(0, 3).join('.') + '.',
+                paragraphs: [{ text: fallbackContent }],
+                wordCount: fallbackContent.split(" ").length,
                 number: chapterNumber,
             };
         }
     }
     // Generate creative thumbnail prompt
-    static async generateThumbnailPrompt(fullStory) {
+    static async generateThumbnailPrompt(options = {}) {
         var _a;
+        const { storyOutline = [], storyMetadata = {}, videoTitle } = options;
+        const { title, characters = [], settings = [], themes = [], tone } = storyMetadata;
+        const outlineText = storyOutline.length > 0
+            ? `📌 Story Outline:
+${storyOutline.map(item => `Chapter ${item.number} (${item.purpose}): ${item.description}`).join('\n')}`
+            : '';
+        const metadataText = `
+📌 Story Context:
+${title ? `Title: ${title}` : ''}
+${videoTitle ? `Video Title: ${videoTitle}` : ''}
+${characters.length > 0 ? `Main Characters: ${characters.join(', ')}` : ''}
+${settings.length > 0 ? `Settings: ${settings.join(', ')}` : ''}
+${themes.length > 0 ? `Themes: ${themes.join(', ')}` : ''}
+${tone ? `Tone: ${tone}` : ''}`;
         const prompt = `
-  You are an expert thumbnail designer for viral YouTube videos.
+You are an expert thumbnail designer for viral YouTube videos.
 
-  Analyze the story below and determine what type of story it is 
-  (e.g., African folktale, romance, fantasy, horror, mystery, sci-fi, etc.).
-  
-  Based on the story type, generate ONE detailed thumbnail prompt 
-  that could be used in an AI image generator (like MidJourney or Stable Diffusion). 
+Create a YouTube thumbnail concept based on the provided story outline and video title.
 
-  Rules for the thumbnail prompt:
-  ● Identify the main character(s) and describe them in attire or style authentic to the story’s setting/genre. 
-    Give them a strong emotional expression that matches the story’s tone 
-    (fear, anger, shock, sadness, pride, mystery, joy, determination).
-  ● Place the character in a dramatic setting that reflects the conflict or theme 
-    (palace courtyard, futuristic city, battlefield, moonlit forest, haunted house, marketplace, ancestral shrine, etc.).
-  ● Add one symbolic or supernatural visual cue from the story 
-    (glowing eyes, broken crown, shadow figure, mask, lightning, fire, snake, mysterious artifact, etc.) to spark curiosity.
-  ● Use a cinematic color palette that fits the mood of the story 
-    (e.g., warm golds/reds/oranges for epic drama, deep blues/purples for mystery, 
-    neon tones for sci-fi, etc.), contrasted with shadows or cool tones to build tension.
-  ● Generate 3–5 short overlay text options that tease the story’s conflict or mystery. 
-    The text must be emotional, suspenseful, and avoid giving away the twist.
-  ● Ensure the overall design feels bold, mysterious, and click-worthy, aligned with viral YouTube storytelling thumbnails.
+${metadataText}
 
-  Story:
-  ${fullStory}
-  `;
+${outlineText}
+
+REQUIREMENTS:
+● The main focus should be one or two key characters, shown with strong emotional expressions (fear, anger, shock, sadness, pride), dressed in attire that fits the story's world and setting.
+● Include one mysterious or supernatural visual element (such as glowing eyes, a shadowy figure, a symbolic creature, fire, storm clouds, a mask, etc.) to spark curiosity.
+● Use a dramatic background that reflects the story's environment—palace-like settings, forests, villages, shrines, or any relevant location from the outline—designed with strong visual contrast.
+● Choose a color palette that supports tension and drama, such as warm tones against deeper shadows.
+● Add a short 3–5 word overlay text in a bold, cinematic font that hints at the conflict without revealing it.
+● The final concept should feel cinematic, suspenseful, highly click-worthy, and maintain an air of mystery.
+● Adapt to the story's genre, tone, themes, and setting (not limited to any specific type or culture).
+
+Generate ONE detailed thumbnail prompt that could be used in an AI image generator (like MidJourney or Stable Diffusion).`;
         const response = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [{ role: "user", content: prompt }],
+            temperature: 0.8,
         });
         return ((_a = response.choices[0].message) === null || _a === void 0 ? void 0 : _a.content) || "";
     }
     //Generate a single viral YouTube title
-    static async generateViralTitle(fullStory) {
+    static async generateViralTitle(options = {}) {
         var _a;
+        const { storyOutline = [], storyMetadata = {} } = options;
+        const { title, characters = [], settings = [], themes = [], tone } = storyMetadata;
+        const outlineText = storyOutline.length > 0
+            ? `📌 Story Outline:
+${storyOutline.map(item => `Chapter ${item.number} (${item.purpose}): ${item.description}`).join('\n')}`
+            : '';
+        const metadataText = `
+📌 Story Context:
+${title ? `Title: ${title}` : ''}
+${characters.length > 0 ? `Main Characters: ${characters.join(', ')}` : ''}
+${settings.length > 0 ? `Settings: ${settings.join(', ')}` : ''}
+${themes.length > 0 ? `Themes: ${themes.join(', ')}` : ''}
+${tone ? `Tone: ${tone}` : ''}`;
         const prompt = `
-  You are a YouTube strategist and viral title expert.
+You are a YouTube strategist and viral title expert.
 
-  Analyze the story below and first identify its type/genre 
-  (e.g., African folktale, romance, fantasy, horror, sci-fi, mystery, etc.).
+Create a viral YouTube title based on the provided story outline.
 
-  Based on that, generate 1 viral YouTube title for the story.
+${metadataText}
 
-  Rules for the title:
-  ● Title must be under 65 characters.
-  ● Use emotional, suspenseful, or mysterious words 
-    (e.g., shocking, forbidden, untold, cursed, betrayed, secret, mysterious, lost, haunted).
-  ● Include cultural or genre-specific cues 
-    (e.g., palace, king, queen, bride, village, forest, spirits, throne, wedding, galaxy, haunted house, etc.).
-  ● Hint at the conflict or twist without revealing the full outcome.
-  ● Style: cinematic, dramatic, and curiosity-driven, like successful viral storytelling channels.
-  ● Return ONLY the title, no numbering or additional text.
+${outlineText}
 
-  Story:
-  ${fullStory}
-  `;
+REQUIREMENTS:
+● Each title must be under 65 characters.
+● Use emotional, suspenseful, or mysterious wording (e.g., shocking, forbidden, untold, cursed, betrayed, secret, lost, haunted).
+● Add contextual cues inspired by the story's world—such as its setting, roles, cultural elements, or atmosphere.
+● Hint at the central conflict or twist without giving away the outcome.
+● Style should remain cinematic, dramatic, and curiosity-driven, similar to successful viral storytelling titles.
+● Adapt to the story's genre, tone, themes, and setting (not limited to any specific type or culture).
+● Return ONLY the title, no numbering or additional text.`;
         const response = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [{ role: "user", content: prompt }],
+            temperature: 0.8,
         });
         return ((_a = response.choices[0].message) === null || _a === void 0 ? void 0 : _a.content) || "";
     }
     //Generate 5 outstanding, high-CTR YouTube title ideas
-    static async generateTitles(fullStory) {
+    static async generateTitles(options = {}) {
         var _a;
+        const { storyOutline = [], storyMetadata = {} } = options;
+        const { title, characters = [], settings = [], themes = [], tone } = storyMetadata;
+        const outlineText = storyOutline.length > 0
+            ? `📌 Story Outline:
+${storyOutline.map(item => `Chapter ${item.number} (${item.purpose}): ${item.description}`).join('\n')}`
+            : '';
+        const metadataText = `
+📌 Story Context:
+${title ? `Title: ${title}` : ''}
+${characters.length > 0 ? `Main Characters: ${characters.join(', ')}` : ''}
+${settings.length > 0 ? `Settings: ${settings.join(', ')}` : ''}
+${themes.length > 0 ? `Themes: ${themes.join(', ')}` : ''}
+${tone ? `Tone: ${tone}` : ''}`;
         const prompt = `
-  You are a YouTube strategist and viral title expert.
+You are a YouTube strategist and viral title expert.
 
-  Analyze the story below and first identify its type/genre 
-  (e.g., African folktale, romance, fantasy, horror, sci-fi, mystery, etc.).
+Create viral YouTube titles based on the provided story outline.
 
-  Based on that, generate 10 viral YouTube title ideas for the story.
+${metadataText}
 
-  Rules for the titles:
-  ● Each title must be under 65 characters.
-  ● Use emotional, suspenseful, or mysterious words 
-    (e.g., shocking, forbidden, untold, cursed, betrayed, secret, mysterious, lost, haunted).
-  ● Include cultural or genre-specific cues 
-    (e.g., palace, king, queen, bride, village, forest, spirits, throne, wedding, galaxy, haunted house, etc.).
-  ● Hint at the conflict or twist without revealing the full outcome.
-  ● Style: cinematic, dramatic, and curiosity-driven, like successful viral storytelling channels.
-  ● Deliver the result as a clean numbered list (1–10).
+${outlineText}
 
-  Story:
-  ${fullStory}
-  `;
+REQUIREMENTS:
+● Generate 10 viral YouTube title ideas for the story.
+● Each title must be under 65 characters.
+● Use emotional, suspenseful, or mysterious wording (e.g., shocking, forbidden, untold, cursed, betrayed, secret, lost, haunted).
+● Add contextual cues inspired by the story's world—such as its setting, roles, cultural elements, or atmosphere.
+● Hint at the central conflict or twist without giving away the outcome.
+● Style should remain cinematic, dramatic, and curiosity-driven, similar to successful viral storytelling titles.
+● Adapt to the story's genre, tone, themes, and setting (not limited to any specific type or culture).
+● Deliver the results in a numbered list (1–10).`;
         const response = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [{ role: "user", content: prompt }],
+            temperature: 0.8,
         });
         return ((_a = response.choices[0].message) === null || _a === void 0 ? void 0 : _a.content) || "";
     }
     //Generate SEO optimized YouTube description + synopsis
-    static async generateDescription(fullStory) {
+    static async generateDescription(options = {}) {
         var _a;
+        const { storyOutline = [], storyMetadata = {} } = options;
+        const { title, characters = [], settings = [], themes = [], tone } = storyMetadata;
+        const outlineText = storyOutline.length > 0
+            ? `📌 Story Outline:
+${storyOutline.map(item => `Chapter ${item.number} (${item.purpose}): ${item.description}`).join('\n')}`
+            : '';
+        const metadataText = `
+📌 Story Context:
+${title ? `Title: ${title}` : ''}
+${characters.length > 0 ? `Main Characters: ${characters.join(', ')}` : ''}
+${settings.length > 0 ? `Settings: ${settings.join(', ')}` : ''}
+${themes.length > 0 ? `Themes: ${themes.join(', ')}` : ''}
+${tone ? `Tone: ${tone}` : ''}`;
         const prompt = `
-  You are a YouTube strategist and expert storyteller.
+You are a YouTube strategist and expert storyteller.
 
-  Analyze the story below and determine its type/genre 
-  (e.g., African folktale, fantasy, horror, romance, sci-fi, mystery, etc.).
+Write a compelling YouTube video description based on the provided story outline.
 
-  Based on the story, write a compelling YouTube video description.
+${metadataText}
 
-  Rules:
-  ● Begin with a dramatic hook in 1–2 sentences that teases the central conflict or mystery.
-  ● Provide a short synopsis of the story (3–5 sentences) written in a cinematic, suspenseful style.
-  ● Add cultural or historical references that match the story’s setting 
-    (e.g., palace, ancestors, traditions, rituals, spirits, kings, queens, warriors, galaxy, haunted house, etc.).
-  ● End with a strong call to action: encourage viewers to like, share, comment their thoughts, 
-    and subscribe for more stories.
-  ● Keep the tone engaging, mysterious, and aligned with viral storytelling channels.
-  ● Make sure it feels optimized for YouTube descriptions (keywords, emotional language, 
-    curiosity-driven phrasing).
+${outlineText}
 
-  Story:
-  ${fullStory}
-  `;
+STRUCTURE REQUIREMENTS:
+1. **Opening Hook (1-2 sentences)**: 
+   - Open with a dramatic hook that hints at the central conflict or mystery
+   - Make it captivating and curiosity-driven
+   - Do not reveal the full outcome
+
+2. **Cinematic Synopsis (3-5 sentences)**:
+   - Follow with a 3-5 sentence cinematic synopsis written in an engaging, suspenseful style
+   - Build on the hook and expand the narrative
+   - Maintain suspense and intrigue
+
+3. **Contextual Elements**:
+   - Incorporate contextual elements to ground the description in the story's unique universe:
+     * Setting details (${settings.length > 0 ? settings.join(', ') : 'various locations'})
+     * Character roles (${characters.length > 0 ? characters.join(', ') : 'main characters'})
+     * Themes (${themes.length > 0 ? themes.join(', ') : 'central themes'})
+     * Tone (${tone || 'dramatic'})
+     * World-building details that enhance the story's atmosphere
+
+4. **Call to Action**:
+   - Conclude with a strong call to action encouraging viewers to:
+     * Like the video
+     * Share with others
+     * Comment their thoughts
+     * Subscribe for more content
+
+5. **Tone & Style**:
+   - Keep the tone captivating and aligned with viral storytelling formats
+   - Use emotional language and curiosity-driven phrasing
+   - Optimize for YouTube descriptions with relevant keywords
+   - Make it engaging, mysterious, and compelling
+
+Generate the description following this exact structure.`;
         const response = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [{ role: "user", content: prompt }],
+            temperature: 0.8,
         });
         return ((_a = response.choices[0].message) === null || _a === void 0 ? void 0 : _a.content) || "";
     }
     //Generate image prompts
-    static async generateImagePrompts(chapterText, originalPrompt) {
+    static async generateImagePrompts(chapterText, options = {}) {
         var _a;
+        const { storyOutline = [], storyMetadata = {}, storedCharacterDetails = [], chapterNumber } = options;
+        const { title, characters = [], settings = [], themes = [], tone, niche } = storyMetadata;
+        const outlineText = storyOutline.length > 0
+            ? `📌 Full Story Outline (for visual consistency):
+${storyOutline.map(item => `Chapter ${item.number} (${item.purpose}): ${item.description}`).join('\n')}`
+            : '';
+        // Format stored character details for the prompt
+        const characterDetailsText = storedCharacterDetails.length > 0
+            ? `\n📌 ESTABLISHED CHARACTER VISUAL DETAILS (MUST USE THESE EXACT DESCRIPTIONS):
+${storedCharacterDetails.map(char => {
+                const details = [];
+                if (char.age)
+                    details.push(`Age: ${char.age}`);
+                if (char.attire)
+                    details.push(`Attire: ${char.attire}`);
+                if (char.facialFeatures)
+                    details.push(`Facial Features: ${char.facialFeatures}`);
+                if (char.physicalTraits)
+                    details.push(`Physical Traits: ${char.physicalTraits}`);
+                if (char.otherDetails)
+                    details.push(`Other: ${char.otherDetails}`);
+                return `- ${char.name}: ${details.join(', ')}`;
+            }).join('\n')}
+
+CRITICAL: You MUST use these exact character descriptions in all image prompts. Do NOT change them unless the story outline or plot explicitly requires a change (e.g., character ages, changes attire due to plot, etc.).`
+            : '';
+        const metadataText = `
+📌 Story Context (for visual consistency):
+${title ? `Title: ${title}` : ''}
+${characters.length > 0 ? `Main Characters: ${characters.join(', ')}` : ''}
+${settings.length > 0 ? `Settings: ${settings.join(', ')}` : ''}
+${themes.length > 0 ? `Themes: ${themes.join(', ')}` : ''}
+${tone ? `Tone: ${tone}` : ''}
+${niche ? `Story Niche/Type: ${niche}` : ''}${characterDetailsText}`;
         const prompt = `
-  You are an expert AI image prompt engineer for cinematic storytelling.
+You are an expert AI image prompt engineer for cinematic storytelling.
 
-  For the following chapter, generate 1 detailed image prompt for EACH paragraph.
+For the following chapter, generate one creative image prompt for each paragraph.
 
-  Rules for the image prompts:
-  ● Each prompt must vividly capture the main event, setting, or emotion of its paragraph.
-  ● Keep characters visually consistent across all prompts (same names, appearance, attire).
-  ● Use cinematic, dramatic, and culturally accurate visuals based on the story’s genre. 
-    If African storytelling: include palaces, villages, forests, rivers, warriors, kings, queens, rituals, masks, ancestral spirits, festivals, 
-    traditional clothing, and landscapes. 
-    If another genre: adapt cultural cues (e.g., sci-fi city, medieval castle, haunted mansion).
-  ● Style: hyper-realistic / cinematic / epic illustration.
-  ● Each prompt should be standalone (do not mention “paragraph” or “chapter” in the wording).
-  ● Deliver results as a clean numbered list, matching the number of paragraphs in the chapter.
+CRITICAL INSTRUCTIONS FOR VISUAL CONSISTENCY:
+${metadataText}
 
-  ${originalPrompt ? `Reference for consistency: ${originalPrompt}` : ""}
+${outlineText}
 
-  Chapter:
-  ${chapterText}
-  `;
+CHARACTER CONSISTENCY REQUIREMENTS:
+${storedCharacterDetails.length > 0
+            ? `- You have established character details above. USE THOSE EXACT DESCRIPTIONS for all characters mentioned.
+- Only modify character details if the story outline or plot explicitly requires it (e.g., time passage, plot-driven transformation, etc.)
+- If a character appears but has no stored details, create consistent details and include them in your prompts`
+            : `- For each character that appears, specify consistent details:
+  * Age (e.g., "a 25-year-old warrior", "an elderly king in his 60s")
+  * Attire (e.g., "wearing traditional royal robes", "dressed in battle armor")
+  * Facial features (e.g., "with a strong jawline and piercing eyes", "a weathered face with deep wrinkles")
+  * Physical traits (e.g., "tall and muscular", "petite with long braided hair", "distinctive scar on left cheek")
+- Use the same character descriptions across all image prompts for the same character`}
+- Then add the action or scene description
+
+IMAGE PROMPT REQUIREMENTS:
+- Each prompt must vividly capture the main event, setting, or emotion of its paragraph
+- Each image prompt must be highly creative and visually striking
+- Use cinematic, dramatic, and culturally accurate visuals based on the story's genre
+  * If African storytelling: include palaces, villages, forests, rivers, warriors, kings, queens, rituals, masks, ancestral spirits, festivals, traditional clothing, and landscapes
+  * If another genre: adapt cultural cues (e.g., sci-fi city, medieval castle, haunted mansion)
+- Style: hyper-realistic / cinematic / epic illustration
+- Each prompt should be standalone (do not mention "paragraph" or "chapter" in the wording)
+- Provide exactly one image prompt per paragraph
+- Deliver results as a clean numbered list, matching the number of paragraphs in the chapter
+
+Chapter Content:
+${chapterText}
+`;
         const response = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [{ role: "user", content: prompt }],
         });
         return ((_a = response.choices[0].message) === null || _a === void 0 ? void 0 : _a.content) || "";
     }
-    //Generate shorthooks
-    static async generateShortsHooks(fullStory) {
-        var _a;
+    // Extract character details from image prompts
+    static async extractCharacterDetails(imagePrompts, characterNames, existingCharacterDetails = []) {
+        var _a, _b;
+        if (characterNames.length === 0) {
+            return [];
+        }
+        const promptsText = imagePrompts.join('\n\n');
+        const existingDetailsText = existingCharacterDetails.length > 0
+            ? `\n\nExisting character details (do not duplicate these):
+${existingCharacterDetails.map(char => {
+                const details = [];
+                if (char.age)
+                    details.push(`Age: ${char.age}`);
+                if (char.attire)
+                    details.push(`Attire: ${char.attire}`);
+                if (char.facialFeatures)
+                    details.push(`Facial Features: ${char.facialFeatures}`);
+                if (char.physicalTraits)
+                    details.push(`Physical Traits: ${char.physicalTraits}`);
+                if (char.otherDetails)
+                    details.push(`Other: ${char.otherDetails}`);
+                return `- ${char.name}: ${details.join(', ')}`;
+            }).join('\n')}`
+            : '';
         const prompt = `
-  You are a YouTube strategist and scriptwriter for viral storytelling Shorts.
+Analyze the following image prompts and extract detailed visual descriptions for each character mentioned.
 
-  Analyze the story below and determine its type/genre 
-  (e.g., African folktale, fantasy, horror, romance, sci-fi, mystery, etc.).
+Characters to extract details for: ${characterNames.join(', ')}
 
-  Based on the story, create 5 different YouTube Shorts opening hooks 
-  (5–10 seconds each).
+${existingDetailsText}
 
-  Rules:
-  ● Start with a shocking question, mysterious statement, or dramatic action.
-  ● Use suspenseful and emotional language that makes the viewer curious to keep watching.
-  ● Keep sentences short, punchy, and cinematic (ideal for Shorts format).
-  ● Style should feel like viral storytelling channels: engaging, mysterious, and full of tension.
-  ● Deliver results as a clean numbered list (1–5).
+For each character found in the prompts, extract and structure:
+- Age (if mentioned, e.g., "25-year-old", "elderly", "young")
+- Attire (clothing, accessories, e.g., "royal robes", "battle armor")
+- Facial features (e.g., "strong jawline", "piercing eyes", "weathered face")
+- Physical traits (e.g., "tall and muscular", "petite", "distinctive scar")
+- Other defining details (any other visual characteristics)
 
-  Story:
-  ${fullStory}
-  `;
-        const response = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
-            messages: [{ role: "user", content: prompt }],
-        });
-        return ((_a = response.choices[0].message) === null || _a === void 0 ? void 0 : _a.content) || "";
+Return ONLY valid JSON in this format:
+{
+  "characters": [
+    {
+      "name": "Character Name",
+      "age": "age description if found",
+      "attire": "attire description if found",
+      "facialFeatures": "facial features if found",
+      "physicalTraits": "physical traits if found",
+      "otherDetails": "other details if found"
+    }
+  ]
+}
+
+Image Prompts:
+${promptsText}
+`;
+        try {
+            const response = await openai.chat.completions.create({
+                model: "gpt-4o-mini",
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.3, // Lower temperature for more consistent extraction
+            });
+            const content = ((_b = (_a = response.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) || "{}";
+            const cleaned = content
+                .replace(/```json\s*/gi, "")
+                .replace(/```\s*/g, "")
+                .trim();
+            const parsed = JSON.parse(cleaned);
+            if (parsed.characters && Array.isArray(parsed.characters)) {
+                // Merge with existing details, only updating if new details are found
+                const merged = [];
+                // Start with existing details
+                existingCharacterDetails.forEach(existing => {
+                    merged.push({ ...existing });
+                });
+                // Add or update with new details
+                parsed.characters.forEach((newChar) => {
+                    const existingIndex = merged.findIndex(c => c.name.toLowerCase() === newChar.name.toLowerCase());
+                    if (existingIndex >= 0) {
+                        // Update existing only if new details are provided
+                        if (newChar.age && !merged[existingIndex].age)
+                            merged[existingIndex].age = newChar.age;
+                        if (newChar.attire && !merged[existingIndex].attire)
+                            merged[existingIndex].attire = newChar.attire;
+                        if (newChar.facialFeatures && !merged[existingIndex].facialFeatures)
+                            merged[existingIndex].facialFeatures = newChar.facialFeatures;
+                        if (newChar.physicalTraits && !merged[existingIndex].physicalTraits)
+                            merged[existingIndex].physicalTraits = newChar.physicalTraits;
+                        if (newChar.otherDetails && !merged[existingIndex].otherDetails)
+                            merged[existingIndex].otherDetails = newChar.otherDetails;
+                    }
+                    else {
+                        // Add new character
+                        merged.push({
+                            name: newChar.name,
+                            age: newChar.age,
+                            attire: newChar.attire,
+                            facialFeatures: newChar.facialFeatures,
+                            physicalTraits: newChar.physicalTraits,
+                            otherDetails: newChar.otherDetails,
+                        });
+                    }
+                });
+                return merged;
+            }
+            return existingCharacterDetails;
+        }
+        catch (error) {
+            console.error("Failed to extract character details:", error);
+            return existingCharacterDetails; // Return existing if extraction fails
+        }
+    }
+    //Generate Shorts hook + image prompts
+    static async generateShortsHooks(options = {}) {
+        var _a, _b;
+        const { storyOutline = [], storyMetadata = {} } = options;
+        const { title, characters = [], settings = [], themes = [], tone, niche } = storyMetadata;
+        const outlineText = storyOutline.length > 0
+            ? `📌 Story Outline:
+${storyOutline.map(item => `Chapter ${item.number} (${item.purpose}): ${item.description}`).join('\n')}`
+            : '';
+        const metadataText = `
+📌 Story Context:
+${title ? `Title: ${title}` : ''}
+${characters.length > 0 ? `Main Characters: ${characters.join(', ')}` : ''}
+${settings.length > 0 ? `Settings: ${settings.join(', ')}` : ''}
+${themes.length > 0 ? `Themes: ${themes.join(', ')}` : ''}
+${tone ? `Tone: ${tone}` : ''}
+${niche ? `Story Niche/Type: ${niche}` : ''}`;
+        const prompt = `
+You are a YouTube strategist and scriptwriter for viral storytelling Shorts, and an expert at visual storytelling prompts.
+
+Using the provided story outline and context, create ONE powerful intro for a YouTube Short storytelling video, **plus image prompts** for that intro.
+
+${metadataText}
+
+${outlineText}
+
+INTRO STRUCTURE (HOOK + TRANSITION):
+- Write the intro as **multiple short paragraphs**.
+- Together, these paragraphs should form:
+  - A **hook** (3–5 suspenseful sentences) that immediately grabs attention, mysterious, dramatic, curiosity-driven.
+  - A **transition** (2–3 sentences) that calms slightly but still engages, introducing the setting, time, or atmosphere, and smoothly leading into the story.
+- Sentences should be short, cinematic, and high-retention.
+
+IMAGE PROMPTS FOR THE INTRO:
+- After writing the intro, generate **one image prompt per paragraph** of the intro.
+- Each image prompt should:
+  - Visually represent the key emotional and narrative beat of that paragraph.
+  - Include clear details about characters (age, attire, facial features, physical traits) and setting (location, time of day, atmosphere) that match the story's world.
+  - Be highly creative, cinematic, and visually striking.
+
+OUTPUT FORMAT (CRITICAL):
+Return ONLY valid JSON in this exact format:
+{
+  "hook": "Full intro text with paragraphs separated by \\n\\n.",
+  "imagePrompts": [
+    "Image prompt for paragraph 1",
+    "Image prompt for paragraph 2",
+    "Image prompt for paragraph 3"
+  ]
+}
+
+⚠️ Do NOT include markdown, backticks, or any text outside the JSON.`;
+        try {
+            const response = await openai.chat.completions.create({
+                model: "gpt-4o-mini",
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.8,
+            });
+            const content = ((_b = (_a = response.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) || "{}";
+            const cleaned = content
+                .replace(/```json\s*/gi, "")
+                .replace(/```\s*/g, "")
+                .trim();
+            const parsed = JSON.parse(cleaned);
+            const hookText = parsed &&
+                typeof parsed.hook === "string" &&
+                parsed.hook.trim().length > 0
+                ? parsed.hook.trim()
+                : "";
+            const imagePrompts = Array.isArray(parsed.imagePrompts)
+                ? parsed.imagePrompts
+                    .filter((p) => typeof p === "string" && p.trim().length > 0)
+                    .map((p) => p.trim())
+                : [];
+            if (!hookText) {
+                return null;
+            }
+            return {
+                hook: hookText,
+                imagePrompts,
+            };
+        }
+        catch (error) {
+            console.error("Failed to parse shorts hooks response as JSON:", error);
+            // Return null if parsing fails
+            return null;
+        }
     }
     //Generate SEO keywords and hashtags
-    static async generateSEOKeywords(fullStory) {
-        var _a;
+    static async generateSEOKeywords(options = {}) {
+        var _a, _b;
+        const { storyOutline = [], storyMetadata = {} } = options;
+        const { title, characters = [], settings = [], themes = [], tone } = storyMetadata;
+        const outlineText = storyOutline.length > 0
+            ? `📌 Story Outline:
+${storyOutline.map(item => `Chapter ${item.number} (${item.purpose}): ${item.description}`).join('\n')}`
+            : '';
+        const metadataText = `
+📌 Story Context:
+${title ? `Title: ${title}` : ''}
+${characters.length > 0 ? `Main Characters: ${characters.join(', ')}` : ''}
+${settings.length > 0 ? `Settings: ${settings.join(', ')}` : ''}
+${themes.length > 0 ? `Themes: ${themes.join(', ')}` : ''}
+${tone ? `Tone: ${tone}` : ''}`;
         const prompt = `
-  You are a YouTube SEO expert and viral content strategist.
+You are a YouTube SEO expert and viral content strategist.
 
-  Analyze the story below and determine its type/genre 
-  (e.g., African folktale, fantasy, horror, romance, sci-fi, mystery, etc.).
+Generate SEO-optimized keywords and hashtags based on the provided story outline and context.
 
-  Based on the story, generate SEO-optimized keywords and hashtags.
+${metadataText}
 
-  Rules:
-  ● Generate 15 SEO keywords (2-4 words each) that are relevant to the story's genre, themes, and cultural elements.
-  ● Generate 10 trending YouTube hashtags that mix general storytelling tags with specific cultural/genre tags.
-  ● Keywords should include terms like: storytelling, folktale, African stories, bedtime stories, viral stories, etc.
-  ● Hashtags should be formatted with # and include both broad and niche tags.
-  ● Focus on terms that would help the video rank well in YouTube search and recommendations.
+${outlineText}
 
-  Story:
-  ${fullStory}
-  `;
-        const response = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
-            messages: [{ role: "user", content: prompt }],
-        });
-        return ((_a = response.choices[0].message) === null || _a === void 0 ? void 0 : _a.content) || "";
+REQUIREMENTS:
+
+1. **SEO Keywords (15 keywords)**:
+   - Generate exactly 15 SEO-friendly keywords tailored to the story's world, themes, conflict, and style
+   - Keywords should be short 2-4-word phrases with high search intent
+   - Align keywords with the story's tone, genre, themes, and narrative style
+   - Focus on terms that would help the video rank well in YouTube search and recommendations
+   - Include a mix of:
+     * Story/genre-specific terms
+     * Theme-related keywords
+     * Character-related terms
+     * Setting/location keywords
+     * Emotional/tone keywords
+     * Conflict-driven keywords
+
+2. **YouTube Hashtags (10 hashtags)**:
+   - Generate exactly 10 trending YouTube hashtags that will boost visibility
+   - Combine broad storytelling tags with more specific emotional, thematic, or world-building cues relevant to the story
+   - Hashtags should be formatted with # symbol
+   - Mix of:
+     * Broad storytelling tags (e.g., #Storytelling, #Narrative)
+     * Genre-specific tags
+     * Emotional/thematic tags
+     * World-building tags
+     * Trending YouTube tags
+
+OUTPUT FORMAT:
+Return ONLY valid JSON in this exact format:
+{
+  "keywords": [
+    "keyword 1",
+    "keyword 2",
+    ...
+    "keyword 15"
+  ],
+  "hashtags": [
+    "#hashtag1",
+    "#hashtag2",
+    ...
+    "#hashtag10"
+  ]
+}
+
+⚠️ Return ONLY valid JSON. Do NOT include markdown code blocks, backticks, or explanations.`;
+        try {
+            const response = await openai.chat.completions.create({
+                model: "gpt-4o-mini",
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.7,
+            });
+            const content = ((_b = (_a = response.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) || "{}";
+            const cleaned = content
+                .replace(/```json\s*/gi, "")
+                .replace(/```\s*/g, "")
+                .trim();
+            const parsed = JSON.parse(cleaned);
+            // Ensure we have arrays and limit to required counts
+            const keywords = Array.isArray(parsed.keywords)
+                ? parsed.keywords.slice(0, 15).filter((k) => k && typeof k === 'string' && k.trim().length > 0)
+                : [];
+            const hashtags = Array.isArray(parsed.hashtags)
+                ? parsed.hashtags.slice(0, 10).filter((h) => h && typeof h === 'string' && h.trim().length > 0)
+                : [];
+            return {
+                keywords: keywords.length > 0 ? keywords : [],
+                hashtags: hashtags.length > 0 ? hashtags : [],
+            };
+        }
+        catch (error) {
+            console.error("Failed to parse SEO keywords response as JSON:", error);
+            // Return empty arrays if parsing fails
+            return {
+                keywords: [],
+                hashtags: [],
+            };
+        }
     }
 }
 exports.AIService = AIService;

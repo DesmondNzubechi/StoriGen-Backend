@@ -46,6 +46,7 @@ export const generateChapterController = catchAsync<AuthenticatedRequest>(async 
       settings: story.settings || [],
       themes: story.themes || [],
       tone: story.tone || "dramatic",
+      niche: story.niche,
     }; 
   } else {
     // Handle summary input: either from summaryId (DB) or summary (direct)
@@ -62,10 +63,11 @@ export const generateChapterController = catchAsync<AuthenticatedRequest>(async 
       // Extract customizations from stored summary
       storyCustomizations = {
         title: summaryDoc.title,
-        characters: summaryDoc.mainCharacters,
+        characters: summaryDoc.mainCharacters, 
         settings: [], // Can be extracted from summary content if needed
         themes: summaryDoc.themes,
         tone: customizations.tone || "dramatic", // Use from request or default
+        niche: summaryDoc.niche,
       };
     } else if (summary) {
       // Use summary directly from request
@@ -77,6 +79,7 @@ export const generateChapterController = catchAsync<AuthenticatedRequest>(async 
         settings: customizations.settings ? (Array.isArray(customizations.settings) ? customizations.settings : [customizations.settings]) : [],
         themes: customizations.themes ? (Array.isArray(customizations.themes) ? customizations.themes : [customizations.themes]) : [],
         tone: customizations.tone || "dramatic",
+        niche: customizations.niche,
       };
     } else {
       return res.status(400).json({
@@ -127,6 +130,7 @@ export const generateChapterController = catchAsync<AuthenticatedRequest>(async 
       settings: outlineResult.metadata.settings,
       themes: outlineResult.metadata.themes,
       tone: outlineResult.metadata.tone,
+      niche: storyCustomizations.niche,
       chapters: [],
       status: "in_progress",
     });
@@ -182,6 +186,7 @@ export const generateChapterController = catchAsync<AuthenticatedRequest>(async 
         settings: story.settings || [],
         themes: story.themes || [],
         tone: story.tone,
+        niche: story.niche,
       },
     }
   );
@@ -245,28 +250,29 @@ export const getFullStory = async (req: AuthenticatedRequest, res: Response, nex
     res.status(200).json({
       success: true,
       data: {
-        story: {
-          _id: story._id,
-          prompt: story.prompt,
-          summary: story.summary,
-          outline: story.outline,
-          targetWords: story.targetWords,
-          targetChapters: story.totalChapters,
-          characterProfile: story.characterProfile,
-          youtubeAssets: story.youtubeAssets,
-          status: story.status,
-          chapterImagePrompts: story.chapterImagePrompts,
-          createdAt: story.createdAt,
-          updatedAt: story.updatedAt,
-          chapters: paginatedChapters,
-        },
-        pagination: {
-          currentPage: Number(page),
-          totalPages: Math.ceil(total / Number(limit)),
-          totalItems: total,
-          hasNextPage: Number(page) < Math.ceil(total / Number(limit)),
-          hasPrevPage: Number(page) > 1,
-        },
+        story: story,
+        // story: {
+        //   _id: story._id,
+        //   prompt: story.prompt,
+        //   summary: story.summary,
+        //   outline: story.outline,
+        //   targetWords: story.targetWords,
+        //   targetChapters: story.totalChapters,
+        //   characterProfile: story.characterProfile,
+        //   youtubeAssets: story.youtubeAssets,
+        //   status: story.status,
+        //   chapterImagePrompts: story.chapterImagePrompts,
+        //   createdAt: story.createdAt,
+        //   updatedAt: story.updatedAt,
+        //   chapters: paginatedChapters,
+        // },
+        // pagination: {
+        //   currentPage: Number(page),
+        //   totalPages: Math.ceil(total / Number(limit)),
+        //   totalItems: total,
+        //   hasNextPage: Number(page) < Math.ceil(total / Number(limit)),
+        //   hasPrevPage: Number(page) > 1,
+        // },
       },
     });
   } catch (error: any) {
@@ -392,15 +398,19 @@ export const generateViralTitle = async (req: AuthenticatedRequest, res: Respons
     if (!story.youtubeAssets.titles) {
       story.youtubeAssets.titles = [];
     }
+    const hadExistingTitle = story.youtubeAssets.titles.length > 0;
     story.youtubeAssets.titles = [viralTitle];
     await story.save();
 
     res.status(200).json({
       success: true,
-      message: "Viral title generated successfully",
+      message: hadExistingTitle
+        ? "Viral title regenerated and replaced successfully"
+        : "Viral title generated successfully",
       data: {
         storyId: story._id,
         viralTitle: viralTitle,
+        replacedExisting: hadExistingTitle,
         updatedStory: story
       }
     });
@@ -413,15 +423,15 @@ export const generateViralTitle = async (req: AuthenticatedRequest, res: Respons
   }
 };
 
-// === Generate Viral Description ===
-export const generateViralDescription = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {                                                            
+  // === Generate Viral Description (with SEO Keywords & Hashtags) ===
+  export const generateViralDescription = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {                                                            
   try {
     const { storyId } = req.params;
 
     const user = req.user;
     if (!user) {
       return next(new AppError("You are not authorised to access this route", 401));
-    }
+    } 
 
     // Find story and verify ownership
     const story = await Story.findOne({ _id: storyId, user: user._id });
@@ -447,23 +457,50 @@ export const generateViralDescription = async (req: AuthenticatedRequest, res: R
     // Clean and format response (optional)
     const description = descriptionResponse.trim();
 
-    // Update story with new viral description
+    // Generate SEO (keywords + hashtags) alongside description using the same context
+    const seoResult = await AIService.generateSEOKeywords({
+      storyOutline: story.outline,
+      storyMetadata: {
+        title: story.storyTitle,
+        characters: story.characters || [],
+        settings: story.settings || [],
+        themes: story.themes || [],
+        tone: story.tone,
+      },
+    });
+    const { keywords = [], hashtags = [] } = seoResult || {};
+
+    // Detect existing values for regenerate messaging
+    const hadExistingDescription = Boolean(story.youtubeAssets.description && story.youtubeAssets.description.length > 0);
+    const hadExistingSEO =
+      (Array.isArray(story.youtubeAssets.hashtags) && story.youtubeAssets.hashtags.length > 0) ||
+      (Array.isArray(story.youtubeAssets.keywords) && story.youtubeAssets.keywords.length > 0);
+
+    // Update story with new viral description, keywords and hashtags (stored together under youtubeAssets)
     story.youtubeAssets.description = description;
+    story.youtubeAssets.keywords = keywords;
+    story.youtubeAssets.hashtags = hashtags;
     await story.save();
 
     res.status(200).json({
       success: true,
-      message: "Viral description generated successfully",
+      message:
+        hadExistingDescription || hadExistingSEO
+          ? "Viral description and SEO regenerated and replaced successfully"
+          : "Viral description and SEO generated successfully",
       data: {
         storyId: story._id,
         viralDescription: description,
+        keywords,
+        hashtags,
+        replacedExisting: hadExistingDescription || hadExistingSEO,
         updatedStory: story,
       },
     });
   } catch (err: any) {
     res.status(500).json({
       success: false,
-      message: "Error generating viral description",
+      message: "Error generating viral description and SEO",
       error: err.message,
     });
   }
@@ -491,6 +528,7 @@ export const generateViralThumbnailPrompts = async (req: AuthenticatedRequest, r
 
     // Generate thumbnail prompt using story outline and metadata (not full story)
     const videoTitle = story.youtubeAssets.titles?.[0] || story.storyTitle; // Use first title if available, otherwise story title
+    const hadExistingThumbnail = Boolean(story.youtubeAssets.thumbnailPrompt && story.youtubeAssets.thumbnailPrompt.length > 0);
     const thumbnailPrompt = await AIService.generateThumbnailPrompt({
       storyOutline: story.outline,
       storyMetadata: {
@@ -509,10 +547,13 @@ export const generateViralThumbnailPrompts = async (req: AuthenticatedRequest, r
 
     res.status(200).json({
       success: true,
-      message: "Viral thumbnail prompt generated successfully",
+      message: hadExistingThumbnail
+        ? "Viral thumbnail prompt regenerated and replaced successfully"
+        : "Viral thumbnail prompt generated successfully",
       data: {
         storyId: story._id,
         thumbnailPrompt: thumbnailPrompt,
+        replacedExisting: hadExistingThumbnail,
         updatedStory: story
       }
     });
@@ -544,8 +585,8 @@ export const generateViralShortsHooks = async (req: AuthenticatedRequest, res: R
       });
     }
 
-    // Generate shorts hooks using story outline and metadata (not full story)
-    const hooks = await AIService.generateShortsHooks({
+    // Generate single shorts hook + image prompts using story outline and metadata (not full story)
+    const hookResult = await AIService.generateShortsHooks({
       storyOutline: story.outline,
       storyMetadata: {
         title: story.storyTitle,
@@ -556,16 +597,33 @@ export const generateViralShortsHooks = async (req: AuthenticatedRequest, res: R
       },
     });
 
-    // Update story
-    story.youtubeAssets.shortsHooks = hooks;
+    if (!hookResult) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to generate shorts hook",
+      });
+    }
+
+    // Update story (store as an array of one structured hook object)
+    const hadExistingHooks =
+      Array.isArray(story.youtubeAssets.shortsHooks) && story.youtubeAssets.shortsHooks.length > 0;
+    story.youtubeAssets.shortsHooks = [
+      {
+        hook: hookResult.hook,
+        imagePrompts: hookResult.imagePrompts || [],
+      },
+    ];
     await story.save();
 
     res.status(200).json({
       success: true,
-      message: "Viral shorts hooks generated successfully",
+      message: hadExistingHooks
+        ? "Viral shorts hooks regenerated and replaced successfully"
+        : "Viral shorts hooks generated successfully",
       data: {
         storyId: story._id,
-        shortsHooks: hooks,
+        shortsHooks: story.youtubeAssets.shortsHooks,
+        replacedExisting: hadExistingHooks,
         updatedStory: story
       }
     });
@@ -612,17 +670,23 @@ export const generateSEOKeywords = async (req: AuthenticatedRequest, res: Respon
     const { keywords, hashtags } = seoResult;
 
     // Update story with keywords and hashtags
+    const hadExistingSEO =
+      (Array.isArray(story.youtubeAssets.hashtags) && story.youtubeAssets.hashtags.length > 0) ||
+      (Array.isArray(story.youtubeAssets.keywords) && story.youtubeAssets.keywords.length > 0);
     story.youtubeAssets.hashtags = hashtags;
     story.youtubeAssets.keywords = keywords;
     await story.save();
 
     res.status(200).json({
       success: true,
-      message: "SEO keywords and hashtags generated successfully",
+      message: hadExistingSEO
+        ? "SEO keywords and hashtags regenerated and replaced successfully"
+        : "SEO keywords and hashtags generated successfully",
       data: {
         storyId: story._id,
         keywords: keywords,
         hashtags: hashtags,
+        replacedExisting: hadExistingSEO,
         updatedStory: story
       }
     });
@@ -682,6 +746,7 @@ export const generateChapterImagePrompts = async (req: AuthenticatedRequest, res
         settings: story.settings || [],
         themes: story.themes || [],
         tone: story.tone,
+        niche: story.niche,
       },
       storedCharacterDetails: storedCharacterDetails,
       chapterNumber: parseInt(chapterNumber),
@@ -772,6 +837,11 @@ export const generateChapterImagePrompts = async (req: AuthenticatedRequest, res
       prompts: prompts
     };
 
+    // Check if there were existing prompts for this chapter
+    const hadExisting = story.chapterImagePrompts.some(
+      (cip: any) => cip.chapter === parseInt(chapterNumber)
+    );
+
     // Remove existing prompts for this chapter if any
     story.chapterImagePrompts = story.chapterImagePrompts.filter(
       (cip: any) => cip.chapter !== parseInt(chapterNumber)
@@ -783,11 +853,14 @@ export const generateChapterImagePrompts = async (req: AuthenticatedRequest, res
 
     res.status(200).json({
       success: true,
-      message: `Image prompts generated successfully for Chapter ${chapterNumber}`,
+      message: hadExisting
+        ? `Image prompts regenerated and replaced for Chapter ${chapterNumber}`
+        : `Image prompts generated successfully for Chapter ${chapterNumber}`,
       data: {
         storyId: story._id,
         chapterNumber: parseInt(chapterNumber),
         imagePrompts: prompts,
+        replacedExisting: hadExisting,
         updatedStory: story
       }
     });

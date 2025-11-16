@@ -25,7 +25,7 @@ export const generateSummary = catchAsync<AuthenticatedRequest>(async (req, res,
     tone,
     targetAudience,
     niche,
-    themes,
+    themes, 
     settings,
   );
 
@@ -84,14 +84,15 @@ export const getSummaries = catchAsync<AuthenticatedRequest>(async (req, res, ne
 
   const summaries = await Summary.find({ user: user._id })
     .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(Number(limit));
+    // .skip(skip)
+    // .limit(Number(limit));
 
   res.status(200).json({
+    count : summaries.length,
     success: true,
     data: summaries,
   });
-});
+}); 
 
 /**
  * Get a single summary by ID

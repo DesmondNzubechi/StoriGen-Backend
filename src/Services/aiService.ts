@@ -460,87 +460,87 @@ Image Prompts:
   
   
   // Generate 5 viral motivational pieces
-// static async generateMotivations(
-//   customizations?: MotivationGenerationOptions
-// ): Promise<GeneratedMotivation[]> {
-//   // If no customizations provided, generate random ones
-//   const { tone, type, themes, targetLength } = customizations || {};
-//   const resolvedTone = tone;
-//   const resolvedType = type;
-//   const resolvedThemes = themes &&  themes.join(", ");
-//   const resolvedLength = targetLength && targetLength > 0 ? targetLength : 300;
+static async generateMotivations(
+  customizations?: MotivationGenerationOptions
+): Promise<GeneratedMotivation[]> {
+  // If no customizations provided, generate random ones
+  const { tone, type, themes, targetLength } = customizations || {};
+  const resolvedTone = tone;
+  const resolvedType = type;
+  const resolvedThemes = themes &&  themes.join(", ");
+  const resolvedLength = targetLength && targetLength > 0 ? targetLength : 300;
 
-//   const prompt = `
-// You are a world-class motivational and inspirational writer for TikTok.
-// Generate exactly 5 unique, high-performing motivational content pieces optimized for short-form social media virality.
+  const prompt = `
+You are a world-class motivational and inspirational writer for TikTok.
+Generate exactly 5 unique, high-performing motivational content pieces optimized for short-form social media virality.
 
-// Instructions for each piece:
-// 1. Tone & Energy:
-//    - Use the tone: ${resolvedTone}
-//    - Write with engaging, modern language. Avoid clichés. Be actionable and inspiring.
+Instructions for each piece:
+1. Tone & Energy:
+   - Use the tone: ${resolvedTone}
+   - Write with engaging, modern language. Avoid clichés. Be actionable and inspiring.
 
-// 2. Structure / Narrative Flow:
-//    - Start with a compelling hook (1-2 sentences).
-//    - Build a relatable scenario or challenge.
-//    - Provide insight, reframing, or life lesson.
-//    - Include quotes from famous people, books, or movies.
-//    - End with an empowering outro that reinforces the main message.
-//    - Use metaphors or sensory language where relevant.
+2. Structure / Narrative Flow:
+   - Start with a compelling hook (1-2 sentences).
+   - Build a relatable scenario or challenge.
+   - Provide insight, reframing, or life lesson.
+   - Include quotes from famous people, books, or movies.
+   - End with an empowering outro that reinforces the main message.
+   - Use metaphors or sensory language where relevant.
   
 
-// 3. Themes:
-//    - Integrate these themes: ${resolvedThemes}
+3. Themes:
+   - Integrate these themes: ${resolvedThemes}
 
-// 4. Type / Archetype:
-//    - Style this as: ${resolvedType}
+4. Type / Archetype:
+   - Style this as: ${resolvedType}
 
-// 5. Length:
-//    - Each piece should be roughly ${resolvedLength} words (±20%).
+5. Length: 
+   - Each piece should be roughly ${resolvedLength} words (±20%).
 
-// 6. Call-to-Action & Social Prompt:
-//    - Include: "Like, Comment, and Follow for more — RulingYou"
-//    - Provide a **short caption** (1 sentence) summarizing the piece and you must Include exactly 5 relevant hashtags directly in the caption, after the sentence.
+6. Call-to-Action & Social Prompt:
+   - Include: "Like, Comment, and Follow for more — RulingYou"
+   - Provide a **short caption** (1 sentence) summarizing the piece and you must Include exactly 5 relevant hashtags directly in the caption, after the sentence.
 
-// 7. Output strictly as JSON using this structure:
+7. Output strictly as JSON using this structure:
 
-// {
-//   "motivations": [
-//     {
-//       "content": "<motivation text with hook and empowering outro>",
-//      "caption": "<caption with hashtags included>"
-//     }
-//   ]
-// }
-// `;
+{
+  "motivations": [
+    {
+      "content": "<motivation text with hook and empowering outro>",
+     "caption": "<caption with hashtags included>"
+    }
+  ]
+}
+`;
 
-//   const response = await openai.chat.completions.create({
-//     model: "gpt-4o-mini",
-//     messages: [{ role: "user", content: prompt }],
-//     temperature: 0.8,
-//   });
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.8,
+  });
 
-//   const rawOutput = response.choices[0]?.message?.content || "";
-//   const cleaned = rawOutput.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+  const rawOutput = response.choices[0]?.message?.content || "";
+  const cleaned = rawOutput.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
 
-//   try {
-//     const parsed = JSON.parse(cleaned);
-//     if (parsed && Array.isArray(parsed.motivations)) {
-//       return parsed.motivations
-//         .map((item: { content?: string; caption?: string }) => ({
-//           content: item?.content?.trim() ?? "",
-//           caption: item?.caption?.trim() ?? "",
-//           // hashtags: Array.isArray(item?.hashtags)
-//           //   ? item.hashtags.filter((tag): tag is string => typeof tag === "string")
-//           //   : [],
-//         }))
-//         .filter((item: GeneratedMotivation) => item.content.length > 0);
-//     }
-//   } catch (error) {
-//     console.error("Failed to parse AI motivations response:", cleaned);
-//   }
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (parsed && Array.isArray(parsed.motivations)) {
+      return parsed.motivations
+        .map((item: { content?: string; caption?: string }) => ({
+          content: item?.content?.trim() ?? "",
+          caption: item?.caption?.trim() ?? "",
+          // hashtags: Array.isArray(item?.hashtags)
+          //   ? item.hashtags.filter((tag): tag is string => typeof tag === "string")
+          //   : [],
+        }))
+        .filter((item: GeneratedMotivation) => item.content.length > 0);
+    }
+  } catch (error) {
+    console.error("Failed to parse AI motivations response:", cleaned);
+  }
 
-//   return [];
-// }
+  return [];
+}
 
 //   static async generateMotivations(
 //   customizations?: MotivationGenerationOptions
@@ -746,104 +746,106 @@ Image Prompts:
 // }
  
   
-  static async generateMotivations(
-  customizations?: MotivationGenerationOptions
-): Promise<GeneratedMotivation[]> {
-  const { tone, type, themes, targetLength } = customizations || {};
-  const resolvedTone = tone;
-  const resolvedType = type;
-  const resolvedThemes = themes && themes.join(", ");
-  const resolvedLength = targetLength && targetLength > 0 ? targetLength : 300;
+//   static async generateMotivations(
+//   customizations?: MotivationGenerationOptions
+// ): Promise<GeneratedMotivation[]> {
+//   const { tone, type, themes, targetLength } = customizations || {};
+//   const resolvedTone = tone;
+//   const resolvedType = type;
+//   const resolvedThemes = themes && themes.join(", ");
+//   const resolvedLength = targetLength && targetLength > 0 ? targetLength : 300;
 
-  const prompt = `
-You are an expert viral motivational and inspirational writer for TikTok, Instagram Reels, YouTube Shorts, and Facebook Reels.  
-Generate **5 unique motivational voiceover scripts** that are fully viral-ready.  
+//   const prompt = `
+// You are an expert viral motivational and inspirational writer for TikTok, Instagram Reels, YouTube Shorts, and Facebook Reels.
+// Generate **5 unique motivational voiceover scripts** that are fully viral-ready.
 
-Requirements for each script:
+// Requirements for each script:
 
-1. **Hook (0–3s)**: 
-   - Begin with a bold micro-hook or emotionally charged question.  
-   - Immediately capture attention with a pattern-interrupt or relatable struggle.  
+// 1. **Hook (0–3s)**:
+//    - Begin with a bold micro-hook or emotionally charged question.
+//    - Immediately capture attention with a pattern-interrupt or relatable struggle.
 
-2. **Relatable Struggle (3–10s)**:  
-   - Describe a common challenge or inner conflict with emotional language.  
-   - Keep sentences short and rhythmical for voiceover pacing.  
+// 2. **Relatable Struggle (3–10s)**:
+//    - Describe a common challenge or inner conflict with emotional language.
+//    - Keep sentences short and rhythmical for voiceover pacing.
 
-3. **Mindset Shift / Turning Point (10–25s)**:  
-   - Reframe the struggle into an opportunity.  
-   - Include **one credible quote** (e.g., Jim Rohn, Tony Robbins, Les Brown, Elon Musk, Steve Jobs, Bill Gates, Mark Zuckerberg, Jeff Bezos, Jensen Huang, Warren Buffett, Rockefeller, Albert Einstein, Nikola Tesla, Donald Trump, Richard Branson, Oprah Winfrey, Michelle Obama, Dwayne “The Rock” Johnson, Simon Sinek, Sheryl Sandberg, Maya Angelou, Rumi, Confucius, Lao Tzu, Mahatma Gandhi, Malcolm X, Martin Luther King Jr., Stephen Covey, Ray Dalio, Naval Ravikant, Peter Drucker, Benjamin Franklin, Thomas Edison, Henry Ford, J.K. Rowling, Charles Darwin, Socrates, Aristotle, Leonardo da Vinci, Coco Chanel, Steve Wozniak, Plato, Fred Smith, Howard Schultz, Mark Cuban, Tony Hsieh.) naturally.  
+// 3. **Mindset Shift / Turning Point (10–25s)**:
+//    - Reframe the struggle into an opportunity.
+//    - Include **one credible quote** (e.g., Jim Rohn, Tony Robbins, Les Brown, Elon Musk, Steve Jobs, Bill Gates, Mark Zuckerberg, Jeff Bezos, Jensen Huang, Warren Buffett, Rockefeller, Albert Einstein, Nikola Tesla, Donald Trump, Richard Branson, Oprah Winfrey, Michelle Obama, Dwayne “The Rock” Johnson, Simon Sinek, Sheryl Sandberg, Maya Angelou, Rumi, Confucius, Lao Tzu, Mahatma Gandhi, Malcolm X, Martin Luther King Jr., Stephen Covey, Ray Dalio, Naval Ravikant, Peter Drucker, Benjamin Franklin, Thomas Edison, Henry Ford, J.K. Rowling, Charles Darwin, Socrates, Aristotle, Leonardo da Vinci, Coco Chanel, Steve Wozniak, Plato, Fred Smith, Howard Schultz, Mark Cuban, Tony Hsieh.) naturally.
 
-4. **Empowering Build / Climax (25–40s)**:  
-   - Use **punchy, rhythmic lines** for rewatchability (e.g., short commands or repeated phrases).  
-   - Encourage immediate action or self-belief.  
+// 4. **Empowering Build / Climax (25–40s)**:
+//    - Use **punchy, rhythmic lines** for rewatchability (e.g., short commands or repeated phrases).
+//    - Encourage immediate action or self-belief.
 
-5. **Emotional Echo Ending (40–60s)**:  
-   - End with a memorable, uplifting line that reinforces empowerment.  
-   - Include **CTA echo** before the platform call-to-action.  
+// 5. **Emotional Echo Ending (40–60s)**:
+//    - End with a memorable, uplifting line that reinforces empowerment.
+//    - Include **CTA echo** before the platform call-to-action.
 
-6. **Call-to-Action (Final Line)**:  
-   - Must always end with: “Like, Comment, and Follow for more — RulingYou.”  
+// 6. **Call-to-Action (Final Line)**:
+//    - Must always end with: “Like, Comment, and Follow for more — RulingYou.”
 
-7. **Voiceover Formatting**:  
-   - Use **ellipses (...)** and **line breaks** to create natural pauses.  
-   - Do **not** include music, visual, or stage directions.  
-   - Text should read naturally aloud.  
+// 7. **Voiceover Formatting**:
+//    - Use **ellipses (...)** and **line breaks** to create natural pauses.
+//    - Do **not** include music, visual, or stage directions.
+//    - Text should read naturally aloud.
 
-8. **Caption**:  
-   - One concise sentence summarizing the script’s core message.  
-   - Include **exactly 5 hashtags** — at least one trending (#Motivation2025).  
-   - Emotional, actionable, and discovery-focused.  
+// 8. **Caption**:
+//    - One concise sentence summarizing the script’s core message.
+//    - Include **exactly 5 hashtags** — at least one trending (#Motivation2025).
+//    - Emotional, actionable, and discovery-focused.
 
-9. **Tone / Style / Themes**:  
-   - Tone: ${resolvedTone}  
-   - Type: ${resolvedType}  
-   - Themes: ${resolvedThemes}  
-   - Length: roughly ${resolvedLength} words (±20%)  
+// 9. **Tone / Style / Themes**:
+//    - Tone: ${resolvedTone}
+//    - Type: ${resolvedType}
+//    - Themes: ${resolvedThemes}
+//    - Length: roughly ${resolvedLength} words (±20%)
 
----
+// ---
 
-**Output strictly as JSON**:
+// **Output strictly as JSON**:
 
-{
-  "motivations": [
-    {
-      "content": "<voiceover-ready script with natural pacing, micro-hooks, punchy climax lines, and emotional echo ending>",
-      "caption": "<1-sentence summary with 5 hashtags>"
-    }
-  ]
-}
+// {
+//   "motivations": [
+//     {
+//       "content": "<voiceover-ready script with natural pacing, micro-hooks, punchy climax lines, and emotional echo ending>",
+//       "caption": "<1-sentence summary with 5 hashtags>"
+//     }
+//   ]
+// }
 
-Generate 5 scripts following these rules.
-`;
+// Generate 5 scripts following these rules.
+// `;
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0.9,
-  });
+//   const response = await openai.chat.completions.create({
+//     model: "gpt-4o-mini",
+//     messages: [{ role: "user", content: prompt }],
+//     temperature: 0.9,
+//   });
 
-  const rawOutput = response.choices[0]?.message?.content || "";
-  const cleaned = rawOutput
-    .replace(/```json\s*/gi, "")
-    .replace(/```\s*/g, "")
-    .trim();
+//   const rawOutput = response.choices[0]?.message?.content || "";
+//   const cleaned = rawOutput
+//     .replace(/```json\s*/gi, "")
+//     .replace(/```\s*/g, "")
+//     .trim();
 
-  try {
-    const parsed = JSON.parse(cleaned);
-    if (parsed && Array.isArray(parsed.motivations)) {
-      return parsed.motivations
-        .map((item: { content?: string; caption?: string }) => ({
-          content: item?.content?.trim() ?? "",
-          caption: item?.caption?.trim() ?? "",
-        }))
-        .filter((item: GeneratedMotivation) => item.content.length > 0);
-    }
-  } catch (error) {
-    console.error("Failed to parse AI motivations response:", cleaned);
-  }
+//   try {
+//     const parsed = JSON.parse(cleaned);
+//     if (parsed && Array.isArray(parsed.motivations)) {
+//       return parsed.motivations
+//         .map((item: { content?: string; caption?: string }) => ({
+//           content: item?.content?.trim() ?? "",
+//           caption: item?.caption?.trim() ?? "",
+//         }))
+//         .filter((item: GeneratedMotivation) => item.content.length > 0);
+//     }
+//   } catch (error) {
+//     console.error("Failed to parse AI motivations response:", cleaned);
+//   }
 
-  return [];
-}
+//   return [];
+  // }
+  
+  
 
 
 
@@ -892,7 +894,7 @@ Format: Numbered list (1–2), each with a brief title + 1 sentence description.
   static async generateViralSummary(
     tone: string, targetAudience:string, niche:string, themes:string, settings: string 
   ): Promise<any> {
-    const prompt = `Generate 10 unique summaries of ${niche} stories. Each summary should be in 2–3 engaging paragraphs that highlight the main characters, the central conflict, and the resolution. Make each summary vivid and easy to follow, ending with the wisdom or moral lesson the story teaches.
+    const prompt = `Generate 5 unique summaries of ${niche} stories. Each summary should be in 2–3 engaging paragraphs that highlight the main characters, the central conflict, and the resolution. Make each summary vivid and easy to follow, ending with the wisdom or moral lesson the story teaches.
 
 Customization Details:
 - Story Type/Niche: ${niche}
@@ -909,7 +911,7 @@ Requirements for each summary:
 4. **Moral Lesson/Wisdom**: End each summary with the wisdom or moral lesson the story teaches.
 5. **Vividness**: Use descriptive, engaging language that brings the story to life.
 6. **Length**: Each summary should be 2–3 paragraphs (approximately 150–250 words).
-7. **Uniqueness**: Each of the 10 summaries should be completely different stories within the ${niche} genre.
+7. **Uniqueness**: Each of the 5 summaries should be completely different stories within the ${niche} genre.
 
 ⚠️ Return ONLY valid JSON. 
 ⚠️ Do NOT include markdown code blocks, backticks, or explanations. 
@@ -936,7 +938,7 @@ Output must be exactly this JSON array:
     "niche": "${niche}",
     "themes": []
   }
-  // ... continue for all 10 summaries
+  // ... continue for all 5 summaries
 ]`;
 
     // Call AI
@@ -1140,6 +1142,7 @@ Return JSON strictly:
         settings?: string[];
         themes?: string[];
         tone?: string;
+        niche?: string;
       };
     } = {}
   ): Promise<{
@@ -1157,7 +1160,7 @@ Return JSON strictly:
       storyMetadata = {}
     } = options;
 
-    const { title, characters = [], settings = [], themes = [], tone } = storyMetadata;
+    const { title, characters = [], settings = [], themes = [], tone, niche } = storyMetadata;
 
     // For subsequent chapters (chapterNumber > 1), ONLY use outline + last chapter summary
     // For first chapter, use full summary
@@ -1526,6 +1529,7 @@ Generate the description following this exact structure.`;
         settings?: string[];
         themes?: string[];
         tone?: string;
+        niche?: string;
       };
       storedCharacterDetails?: Array<{
         name: string;
@@ -1539,7 +1543,7 @@ Generate the description following this exact structure.`;
     } = {}
   ) {
     const { storyOutline = [], storyMetadata = {}, storedCharacterDetails = [], chapterNumber } = options;
-    const { title, characters = [], settings = [], themes = [], tone } = storyMetadata;
+    const { title, characters = [], settings = [], themes = [], tone, niche } = storyMetadata;
 
     const outlineText = storyOutline.length > 0
       ? `📌 Full Story Outline (for visual consistency):
@@ -1568,7 +1572,8 @@ ${title ? `Title: ${title}` : ''}
 ${characters.length > 0 ? `Main Characters: ${characters.join(', ')}` : ''}
 ${settings.length > 0 ? `Settings: ${settings.join(', ')}` : ''}
 ${themes.length > 0 ? `Themes: ${themes.join(', ')}` : ''}
-${tone ? `Tone: ${tone}` : ''}${characterDetailsText}`;
+${tone ? `Tone: ${tone}` : ''}
+${niche ? `Story Niche/Type: ${niche}` : ''}${characterDetailsText}`;
 
     const prompt = `
 You are an expert AI image prompt engineer for cinematic storytelling.
@@ -1753,7 +1758,7 @@ ${promptsText}
     }
   }
 
-  //Generate shorthooks
+  //Generate Shorts hook + image prompts
   static async generateShortsHooks(
     options: {
       storyOutline?: { number: number; purpose: string; description: string }[];
@@ -1763,11 +1768,12 @@ ${promptsText}
         settings?: string[];
         themes?: string[];
         tone?: string;
+        niche?: string;
       };
     } = {}
-  ): Promise<string[]> {
+  ): Promise<{ hook: string; imagePrompts: string[] } | null> {
     const { storyOutline = [], storyMetadata = {} } = options;
-    const { title, characters = [], settings = [], themes = [], tone } = storyMetadata;
+    const { title, characters = [], settings = [], themes = [], tone, niche } = storyMetadata;
 
     const outlineText = storyOutline.length > 0
       ? `📌 Story Outline:
@@ -1780,52 +1786,44 @@ ${title ? `Title: ${title}` : ''}
 ${characters.length > 0 ? `Main Characters: ${characters.join(', ')}` : ''}
 ${settings.length > 0 ? `Settings: ${settings.join(', ')}` : ''}
 ${themes.length > 0 ? `Themes: ${themes.join(', ')}` : ''}
-${tone ? `Tone: ${tone}` : ''}`;
+${tone ? `Tone: ${tone}` : ''}
+${niche ? `Story Niche/Type: ${niche}` : ''}`;
 
     const prompt = `
-You are a YouTube strategist and scriptwriter for viral storytelling Shorts.
+You are a YouTube strategist and scriptwriter for viral storytelling Shorts, and an expert at visual storytelling prompts.
 
-Based on the provided story outline and context, write 5 different intro hooks for YouTube Shorts storytelling videos.
+Using the provided story outline and context, create ONE powerful intro for a YouTube Short storytelling video, **plus image prompts** for that intro.
 
 ${metadataText}
 
 ${outlineText}
 
-STRUCTURE FOR EACH INTRO:
-Each intro must be composed of two parts:
+INTRO STRUCTURE (HOOK + TRANSITION):
+- Write the intro as **multiple short paragraphs**.
+- Together, these paragraphs should form:
+  - A **hook** (3–5 suspenseful sentences) that immediately grabs attention, mysterious, dramatic, curiosity-driven.
+  - A **transition** (2–3 sentences) that calms slightly but still engages, introducing the setting, time, or atmosphere, and smoothly leading into the story.
+- Sentences should be short, cinematic, and high-retention.
 
-1. **Hook (5-7 suspenseful sentences)**:
-   - Write an intro hook that immediately grabs attention
-   - Must be mysterious, dramatic, and curiosity-driven
-   - Use suspenseful and emotional language
-   - Keep sentences short, punchy, and cinematic
-   - Should make the viewer curious to keep watching
+IMAGE PROMPTS FOR THE INTRO:
+- After writing the intro, generate **one image prompt per paragraph** of the intro.
+- Each image prompt should:
+  - Visually represent the key emotional and narrative beat of that paragraph.
+  - Include clear details about characters (age, attire, facial features, physical traits) and setting (location, time of day, atmosphere) that match the story's world.
+  - Be highly creative, cinematic, and visually striking.
 
-2. **Transition (5-6 sentences)**:
-   - Write a smooth transition that grounds the viewer and sets up the beginning of the story narration
-   - Should be calming but still engaging
-   - Introduces the setting, time, or atmosphere
-   - Flows naturally from the hook
-
-REQUIREMENTS:
-- The entire intro should flow naturally into the storytelling script, like viral narration videos
-- Each intro should be unique and offer a different angle or approach
-- Style should feel like viral storytelling channels: engaging, mysterious, and full of tension
-- Adapt to the story's genre, tone, themes, and setting (not limited to any specific type or culture)
-- Each intro should be complete and ready to use (hook + transition)
-- Make it feel authentic to the story's world and context
-
-OUTPUT FORMAT:
+OUTPUT FORMAT (CRITICAL):
 Return ONLY valid JSON in this exact format:
 {
-  "hooks": [
-    "Hook sentence 1. Hook sentence 2. Hook sentence 3. Transition sentence 1. Transition sentence 2.",
-    "Hook sentence 1. Hook sentence 2. Hook sentence 3. Hook sentence 4. Transition sentence 1. Transition sentence 2. Transition sentence 3.",
-    ...
+  "hook": "Full intro text with paragraphs separated by \\n\\n.",
+  "imagePrompts": [
+    "Image prompt for paragraph 1",
+    "Image prompt for paragraph 2",
+    "Image prompt for paragraph 3"
   ]
 }
 
-⚠️ Return ONLY valid JSON. Do NOT include markdown code blocks, backticks, or explanations.`;
+⚠️ Do NOT include markdown, backticks, or any text outside the JSON.`;
 
     try {
       const response = await openai.chat.completions.create({
@@ -1841,20 +1839,32 @@ Return ONLY valid JSON in this exact format:
         .trim();
 
       const parsed = JSON.parse(cleaned);
-      
-      // Ensure we have an array of hooks
-      const hooks = Array.isArray(parsed.hooks)
-        ? parsed.hooks
-            .slice(0, 5)
-            .filter((h: any) => h && typeof h === 'string' && h.trim().length > 0)
-            .map((h: string) => h.trim())
+
+      const hookText =
+        parsed &&
+        typeof parsed.hook === "string" &&
+        parsed.hook.trim().length > 0
+          ? parsed.hook.trim()
+          : "";
+
+      const imagePrompts: string[] = Array.isArray(parsed.imagePrompts)
+        ? parsed.imagePrompts
+            .filter((p: any) => typeof p === "string" && p.trim().length > 0)
+            .map((p: string) => p.trim())
         : [];
 
-      return hooks.length > 0 ? hooks : [];
+      if (!hookText) {
+        return null;
+      }
+
+      return {
+        hook: hookText,
+        imagePrompts,
+      };
     } catch (error) {
       console.error("Failed to parse shorts hooks response as JSON:", error);
-      // Return empty array if parsing fails
-      return [];
+      // Return null if parsing fails
+      return null;
     }
   }
 
