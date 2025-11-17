@@ -125,6 +125,8 @@ class AIService {
         const targetLength = targetWord || 200; // default ~200 words
         // Prompt designed for viral motivational shorts
         const prompt = `
+IMPORTANT: Use simple, easy-to-understand English in all your responses. Avoid complex grammar and heavy language structures.
+
 Generate a **viral motivational script** using the following details:
 
 Type of motivation: ${typeOfMotivation}
@@ -302,6 +304,8 @@ Image Prompts:
         const resolvedThemes = themes && themes.join(", ");
         const resolvedLength = targetLength && targetLength > 0 ? targetLength : 300;
         const prompt = `
+IMPORTANT: Use simple, easy-to-understand English in all your responses. Avoid complex grammar and heavy language structures.
+
 You are a world-class motivational and inspirational writer for TikTok.
 Generate exactly 5 unique, high-performing motivational content pieces optimized for short-form social media virality.
 
@@ -634,7 +638,9 @@ Instructions for each piece:
         const niche = customizations.niche;
         const themes = customizations.themes;
         const settings = customizations.settings;
-        const prompt = `Generate 2 raw story ideas for a ${niche} YouTube storytelling video.
+        const prompt = `IMPORTANT: Use simple, easy-to-understand English in all your responses. Avoid complex grammar and heavy language structures.
+
+Generate 2 raw story ideas for a ${niche} YouTube storytelling video.
 - Must be inspired by viral themes: ${themes}.
 - Rooted in typical ${niche} settings (${settings}).
 - Each idea must include a shocking twist or mystery that hooks viewers immediately.
@@ -661,7 +667,9 @@ Format: Numbered list (1–2), each with a brief title + 1 sentence description.
     //Generate Viral Summaries
     static async generateViralSummary(tone, targetAudience, niche, themes, settings) {
         var _a, _b;
-        const prompt = `Generate 5 unique summaries of ${niche} stories. Each summary should be in 2–3 engaging paragraphs that highlight the main characters, the central conflict, and the resolution. Make each summary vivid and easy to follow, ending with the wisdom or moral lesson the story teaches.
+        const prompt = `IMPORTANT: Use simple, easy-to-understand English in all your responses. Avoid complex grammar and heavy language structures.
+
+Generate 5 unique summaries of ${niche} stories. Each summary should be in 2–3 engaging paragraphs that highlight the main characters, the central conflict, and the resolution. Make each summary vivid and easy to follow, ending with the wisdom or moral lesson the story teaches.
 
 Customization Details:
 - Story Type/Niche: ${niche}
@@ -754,6 +762,8 @@ Output must be exactly this JSON array:
         var _a, _b;
         const { title, characters, settings, themes, tone } = customizations;
         const prompt = `
+IMPORTANT: Use simple, easy-to-understand English in all your responses. Avoid complex grammar and heavy language structures.
+
 Generate a comprehensive story outline and metadata based on this summary:
 "${summaryContent}"
 
@@ -871,6 +881,8 @@ ${summaryContent}
 ${storyOutline.map(item => `Chapter ${item.number} (${item.purpose}): ${item.description}`).join('\n')}`;
         const isFinalChapter = chapterNumber === totalChapters;
         const prompt = `
+IMPORTANT: Use simple, easy-to-understand English in all your responses. Avoid complex grammar and heavy language structures.
+
 You are writing Chapter ${chapterNumber} of a ${totalChapters}-chapter continuous story.
 
 ${contextForContinuity}
@@ -965,6 +977,8 @@ ${settings.length > 0 ? `Settings: ${settings.join(', ')}` : ''}
 ${themes.length > 0 ? `Themes: ${themes.join(', ')}` : ''}
 ${tone ? `Tone: ${tone}` : ''}`;
         const prompt = `
+IMPORTANT: Use simple, easy-to-understand English in all your responses. Avoid complex grammar and heavy language structures.
+
 You are an expert thumbnail designer for viral YouTube videos.
 
 Create a YouTube thumbnail concept based on the provided story outline and video title.
@@ -1007,6 +1021,8 @@ ${settings.length > 0 ? `Settings: ${settings.join(', ')}` : ''}
 ${themes.length > 0 ? `Themes: ${themes.join(', ')}` : ''}
 ${tone ? `Tone: ${tone}` : ''}`;
         const prompt = `
+IMPORTANT: Use simple, easy-to-understand English in all your responses. Avoid complex grammar and heavy language structures.
+
 You are a YouTube strategist and viral title expert.
 
 Create a viral YouTube title based on the provided story outline.
@@ -1047,6 +1063,8 @@ ${settings.length > 0 ? `Settings: ${settings.join(', ')}` : ''}
 ${themes.length > 0 ? `Themes: ${themes.join(', ')}` : ''}
 ${tone ? `Tone: ${tone}` : ''}`;
         const prompt = `
+IMPORTANT: Use simple, easy-to-understand English in all your responses. Avoid complex grammar and heavy language structures.
+
 You are a YouTube strategist and viral title expert.
 
 Create viral YouTube titles based on the provided story outline.
@@ -1088,6 +1106,8 @@ ${settings.length > 0 ? `Settings: ${settings.join(', ')}` : ''}
 ${themes.length > 0 ? `Themes: ${themes.join(', ')}` : ''}
 ${tone ? `Tone: ${tone}` : ''}`;
         const prompt = `
+IMPORTANT: Use simple, easy-to-understand English in all your responses. Avoid complex grammar and heavy language structures.
+
 You are a YouTube strategist and expert storyteller.
 
 Write a compelling YouTube video description based on the provided story outline.
@@ -1174,6 +1194,8 @@ ${themes.length > 0 ? `Themes: ${themes.join(', ')}` : ''}
 ${tone ? `Tone: ${tone}` : ''}
 ${niche ? `Story Niche/Type: ${niche}` : ''}${characterDetailsText}`;
         const prompt = `
+IMPORTANT: Use simple, easy-to-understand English in all your responses. Avoid complex grammar and heavy language structures.
+
 You are an expert AI image prompt engineer for cinematic storytelling.
 
 For the following chapter, generate one creative image prompt for each paragraph.
@@ -1241,6 +1263,8 @@ ${existingCharacterDetails.map(char => {
             }).join('\n')}`
             : '';
         const prompt = `
+IMPORTANT: Use simple, easy-to-understand English in all your responses. Avoid complex grammar and heavy language structures.
+
 Analyze the following image prompts and extract detailed visual descriptions for each character mentioned.
 
 Characters to extract details for: ${characterNames.join(', ')}
@@ -1345,6 +1369,8 @@ ${themes.length > 0 ? `Themes: ${themes.join(', ')}` : ''}
 ${tone ? `Tone: ${tone}` : ''}
 ${niche ? `Story Niche/Type: ${niche}` : ''}`;
         const prompt = `
+IMPORTANT: Use simple, easy-to-understand English in all your responses. Avoid complex grammar and heavy language structures.
+
 You are a YouTube strategist and scriptwriter for viral storytelling Shorts, and an expert at visual storytelling prompts.
 
 Using the provided story outline and context, create ONE powerful intro for a YouTube Short storytelling video, **plus image prompts** for that intro.
@@ -1432,6 +1458,8 @@ ${settings.length > 0 ? `Settings: ${settings.join(', ')}` : ''}
 ${themes.length > 0 ? `Themes: ${themes.join(', ')}` : ''}
 ${tone ? `Tone: ${tone}` : ''}`;
         const prompt = `
+IMPORTANT: Use simple, easy-to-understand English in all your responses. Avoid complex grammar and heavy language structures.
+
 You are a YouTube SEO expert and viral content strategist.
 
 Generate SEO-optimized keywords and hashtags based on the provided story outline and context.
