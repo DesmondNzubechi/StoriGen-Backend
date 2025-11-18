@@ -47,7 +47,7 @@ export const generateChapterController = catchAsync<AuthenticatedRequest>(async 
       themes: story.themes || [],
       tone: story.tone || "dramatic",
       niche: story.niche,
-    }; 
+    };  
   } else {
     // Handle summary input: either from summaryId (DB) or summary (direct)
     if (summaryId) {
@@ -731,6 +731,8 @@ export const generateChapterImagePrompts = async (req: AuthenticatedRequest, res
     const storedCharacterDetails = (story.characterDetails || []).map((char: any) => ({
       name: char.name,
       age: char.age,
+      skinTone: char.skinTone,
+      ethnicity: char.ethnicity,
       attire: char.attire,
       facialFeatures: char.facialFeatures,
       physicalTraits: char.physicalTraits,
@@ -789,6 +791,14 @@ export const generateChapterImagePrompts = async (req: AuthenticatedRequest, res
             needsUpdate = true;
             updateReason = hasPlotChange ? 'Plot development' : 'New detail found';
           }
+          if (newChar.skinTone && newChar.skinTone !== existing.skinTone) {
+            needsUpdate = true;
+            updateReason = hasPlotChange ? 'Plot development' : 'New detail found';
+          }
+          if (newChar.ethnicity && newChar.ethnicity !== existing.ethnicity) {
+            needsUpdate = true;
+            updateReason = hasPlotChange ? 'Plot development' : 'New detail found';
+          }
           if (newChar.attire && newChar.attire !== existing.attire) {
             needsUpdate = true;
             updateReason = hasPlotChange ? 'Plot-driven attire change' : 'New detail found';
@@ -807,7 +817,7 @@ export const generateChapterImagePrompts = async (req: AuthenticatedRequest, res
           }
 
           // Only update if there's a meaningful reason
-          if (needsUpdate && (hasPlotChange || !existing.age || !existing.attire || !existing.facialFeatures)) {
+          if (needsUpdate && (hasPlotChange || !existing.age || !existing.skinTone || !existing.ethnicity || !existing.attire || !existing.facialFeatures)) {
             story.characterDetails[existingIndex] = {
               ...existing,
               ...newChar,
@@ -820,6 +830,8 @@ export const generateChapterImagePrompts = async (req: AuthenticatedRequest, res
           story.characterDetails.push({
             name: newChar.name,
             age: newChar.age,
+            skinTone: newChar.skinTone,
+            ethnicity: newChar.ethnicity,
             attire: newChar.attire,
             facialFeatures: newChar.facialFeatures,
             physicalTraits: newChar.physicalTraits,

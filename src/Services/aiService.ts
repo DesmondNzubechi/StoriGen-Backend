@@ -257,8 +257,8 @@ export class AIService {
     };
   }
 
-//generate motivational speech
- static async generateMotivationalSpeech(
+  //generate motivational speech
+  static async generateMotivationalSpeech(
     customizations: MotivationCustomization
   ): Promise<{
     title: string;
@@ -284,7 +284,7 @@ Requirements:
 1. Start with a **hook** — a bold, emotional first line that immediately grabs the viewer's attention.
 2. Structure the script into **3–5 short, powerful paragraphs**, each representing an emotional or mental shift.
 3. End with a **strong outro** that feels complete and motivating — then finish with a **social CTA** that says:
-   “Follow us for more daily motivation. Like, comment, and share this video if it inspired you.”
+   "Follow us for more daily motivation. Like, comment, and share this video if it inspired you."
 4. The tone must be **cinematic, emotional, realistic**, and relatable.
 5. Stay close to the ${targetLength}-word count.
 6. After the script, also provide:
@@ -357,112 +357,7 @@ Image Prompts:
     };
   }
 
-
-  // Generate 5 viral motivational pieces
-//   static async generateMotivations(
-//     customizations: MotivationGenerationOptions
-//   ): Promise<GeneratedMotivation[]> {
-//     const { tone, type, themes, targetLength } = customizations;
-
-//     const resolvedTone = tone || "Uplifting";
-//     const resolvedType = type || "Affirmation";
-//     const resolvedThemes =
-//       themes.length > 0 ? themes.join(", ") : "resilience, perseverance";
-//     const resolvedLength = targetLength > 0 ? targetLength : 300;
-
-//     const prompt = `
-// You are a motivational and inspirational writing expert.
-// Generate exactly 5 unique ${resolvedType.toLowerCase()} pieces.
-
-// Guidelines:
-// - Tone: ${resolvedTone}
-// - Themes to weave in: ${resolvedThemes}
-// - Each piece must start with a compelling hook tailored to the tone, type, and themes.
-// - Each piece must end with an empowering outro that reinforces the customization details.
-// - Each piece must be roughly ${resolvedLength} words (±20%).
-// - Write in engaging, modern language. Avoid clichés and make each piece actionable.
-// - Use quotes from famous influential people, books, or movies to make each piece more engaging.
-// - Ensure each piece feels distinct while sharing the requested tone and themes.
-// - Provide a short caption (1 sentence) for each piece with exactly 5 relevant hashtags per piece.
-// - Finish with a **social CTA** that says: “Follow us for more daily motivation. Like, comment, and share this video if it inspired you.”
-
-// Return only valid JSON, no markdown, using this structure:
-// {
-//   "motivations": [
-//     {
-//       "content": "<motivation 1 text with hook at start and outro at end>",
-//       "caption": "<caption>",
-//     },
-//     {
-//       "content": "<motivation 2 text with hook at start and outro at end>",
-//       "caption": "<caption>",
-//     },
-//     {
-//       "content": "<motivation 3 text with hook at start and outro at end>",
-//       "caption": "<caption>",
-//     },
-//      {
-//       "content": "<motivation 3 text with hook at start and outro at end>",
-//       "caption": "<caption>",
-//     },
-//      {
-//       "content": "<motivation 3 text with hook at start and outro at end>",
-//       "caption": "<caption>",
-//     }
-//   ]
-// }
-// `;
-
-//     const response = await openai.chat.completions.create({
-//       model: "gpt-4o-mini",
-//       messages: [{ role: "user", content: prompt }],
-//       temperature: 0.8,
-//     });
-
-//     const rawOutput = response.choices[0]?.message?.content || "";
-//     const cleaned = rawOutput
-//       .replace(/```json\s*/gi, "")
-//       .replace(/```\s*/g, "")
-//       .trim();
-
-//     try {
-//       const parsed = JSON.parse(cleaned);
-//       if (
-//         parsed &&
-//         Array.isArray(parsed.motivations)
-//       ) {
-//         return parsed.motivations
-//           .map(
-//             (item: {
-//               content?: string;
-//               caption?: string;
-//              // hashtags?: string[];
-//             }) => ({
-//               content: item?.content?.trim() ?? "",
-//               caption: item?.caption?.trim() ?? "",
-//               // hashtags: Array.isArray(item?.hashtags)
-//               //   ? item!.hashtags.filter(
-//               //       (tag): tag is string => typeof tag === "string"
-//               //     )
-//               //   : [],
-//             })
-//           )
-//           .filter(
-//             (item: GeneratedMotivation) => item.content.length > 0
-//           );
-//       }
-//     } catch (error) {
-//       console.error("Failed to parse AI motivations response:", cleaned);
-//     }
-
-//     return [];
-  //   }
-
-
-  
-  
-  // Generate 5 viral motivational pieces
-static async generateMotivations(
+  static async generateMotivations(
   customizations?: MotivationGenerationOptions
 ): Promise<GeneratedMotivation[]> {
   // If no customizations provided, generate random ones
@@ -484,7 +379,7 @@ Instructions for each piece:
    - Write with engaging, modern language. Avoid clichés. Be actionable and inspiring.
 
 2. Structure / Narrative Flow:
-   - Start with a compelling hook (1-2 sentences).
+   - Start with a **hook** — a bold, emotional first line that immediately grabs the viewer's attention.
    - Build a relatable scenario or challenge.
    - Provide insight, reframing, or life lesson.
    - Include quotes from famous people, books, or movies.
@@ -543,318 +438,10 @@ Instructions for each piece:
     console.error("Failed to parse AI motivations response:", cleaned);
   }
 
-  return [];
+  return []; 
 }
 
-//   static async generateMotivations(
-//   customizations?: MotivationGenerationOptions
-// ): Promise<GeneratedMotivation[]> {
-//   // If no customizations provided, generate random ones
-//   const { tone, type, themes, targetLength } = customizations || {};
-//   const resolvedTone = tone;
-//   const resolvedType = type;
-//   const resolvedThemes = themes && themes.join(", ");
-//   const resolvedLength = targetLength && targetLength > 0 ? targetLength : 300;
-//   const prompt = `
-// You are a world-class motivational and inspirational video script writer optimized for viral success across TikTok, Instagram Reels, Facebook Reels, and YouTube Shorts/Long-form. You've analyzed thousands of viral motivational videos from 2025, incorporating best practices like emotional 0-3s hooks, fast pacing, relatable scenarios, cinematic visuals, rising audio, bold on-screen captions, compelling thumbnails, strategic hashtags, and engagement-driving CTAs. Your goal is to generate content that achieves high views (>100K), engagement (>5% likes/views), shares, and retention by applying every viral factor without omission.
 
-// Generate exactly 5 unique, high-performing motivational video scripts optimized for short-form virality (20-60s, ${resolvedLength} words) or adaptable to long-form compilations (1-2min+). Each script must be platform-agnostic but include notes for adaptations (e.g., faster cuts for TikTok, aesthetic filters for Instagram).
-
-// Instructions for each script:
-// 1. Tone & Energy:
-//    - Use the tone: ${resolvedTone} (e.g., energetic, reflective, urgent).
-//    - Write with engaging, modern language. Avoid clichés. Be actionable, inspiring, and psychologically resonant (tap into identity, emotions, intellect, social proof, practical benefits).
-//    - Incorporate rhetorical devices: questions, repetitions, metaphors, sensory language for relatability and emotional pull.
-
-// 2. Structure / Narrative Flow (Cross-Platform Viral Patterns):
-//    - **Hook (0-3s):** Emotional/relatable/shock/curiosity opener (e.g., "You've forgotten how strong you are" with direct address). Aim for 70%+ retention.
-//    - **Middle/Build (3-40s):** Relatable challenge/scenario, insight/reframing/life lesson, integrate Stoic/wisdom quotes from famous people/books/movies. Use 3-5 key points or story arc with rising tension.
-//    - **Climax (40-50s):** Empowering revelation or call to action, tied to themes.
-//    - **Ending/Outro (50-60s):** Reinforce message with motivational close, include CTA for engagement.
-//    - Length: Roughly ${resolvedLength} words (±20%), mapping to 20-60s spoken pace.
-//    - Pacing: Fast cuts (4-6/min), build with rising energy; for long-form, themed segments.
-
-// 3. Themes:
-//    - Integrate these themes: ${resolvedThemes} (weave universally: fear, regret, self-doubt into empowerment).
-
-// 4. Type / Archetype:
-//    - Style this as: ${resolvedType} (e.g., pep talk, affirmation, cinematic edit; ensure diversity: speeches, quotes montages, glow-ups).
-
-// 5. Viral Elements (Incorporate All Insights):
-//    - **Script/Phrasing:** Conversational "you" address, active voice, vary sentence length for rhythm. Include emotional drivers (pain/aspire), intellectual why's, social proof (stories), practical steps.
-  
- 
-//    - **On-Screen Captions/Text:** Bold sans-serif, timed sync (0.5s delay, 24pt), key phrases/quotes pop (80% screen, readable for silent viewing).
-//    - **Thumbnail:** Suggest frame (e.g., intense pose + quote overlay, high contrast, "Now or Never?").
-//    - **Posting Metadata:** Optimal time (8-10AM/8PM local), crosspost notes (duets for TikTok, boosts for FB).
-//    - **Hashtags:** 3-5 mix (broad #Motivation2025 + niche #StorigenMindset).
-//    - **CTAs & Engagement:** Questions ("What's your 2025 goal?"), tags ("Tag a friend"), challenges ("Save & share your win"), prompts for comments/shares/duets (40%+ reply boost).
-//    - **Distribution/Boost:** Notes for crossposting, UGC encouragement, no paid if not evident.
-//    - Avoid Failures: No generic quotes alone, slow pacing, no CTAs, salesy pitches.
-
-// 6. Platform-Specific Adaptations:
-//    - **TikTok:** 15-45s, trending sounds, duets/stitches, fast hooks.
-//    - **Instagram Reels:** Aesthetic visuals, UGC prompts, evening posts.
-//    - **Facebook Reels:** Community shares, morning posts, emotional narratives.
-//    - **YouTube Shorts:** Loopable hooks, subscribe CTAs; Long-form: Compilations with watch time focus.
-   
-// 7. Call-to-Action & Social Prompt:
-//    - Include in script: "Like, Comment, and Follow for more — RulingYou" + platform CTAs.
-//    - Provide a **short caption** (1 sentence) summarizing the piece, including exactly 5 relevant hashtags after the sentence.
-//    - Add **thumbnail_description**, **visuals_description**, **audio_suggestion**, **caption_timings** (e.g., "0-3s: Hook text").
-
-// 8. Output strictly as JSON using this structure:
-// {
-//   "motivations": [
-//     {
-//       "content": "<script text >",
-//       "caption": "<caption with hashtags included>",
-//       "thumbnail_description": "<thumbnail idea>",
-//       "visuals_description": "<detailed visuals/editing notes>",
-//       "audio_suggestion": "<audio/music/VO notes>",
-//       "on_screen_captions": "<timed caption list>",
-//       "platform_adaptations": "<notes for each platform>",
-//       "cta_suggestions": "<additional CTAs>"
-//     }
-//   ]
-// }
-// `;
-//   const response = await openai.chat.completions.create({
-//     model: "gpt-4o-mini",
-//     messages: [{ role: "user", content: prompt }],
-//     temperature: 0.8,
-//   });
-//   const rawOutput = response.choices[0]?.message?.content || "";
-//   const cleaned = rawOutput.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
-//   try {
-//     const parsed = JSON.parse(cleaned);
-//     if (parsed && Array.isArray(parsed.motivations)) {
-//       return parsed.motivations
-//         .map((item: {
-//           content?: string;
-//           caption?: string;
-//           thumbnail_description?: string;
-//           visuals_description?: string;
-//           audio_suggestion?: string;
-//           on_screen_captions?: string;
-//           platform_adaptations?: string;
-//           cta_suggestions?: string;
-//         }) => ({
-//           content: item?.content?.trim() ?? "",
-//           caption: item?.caption?.trim() ?? "",
-//           thumbnail_description: item?.thumbnail_description?.trim() ?? "",
-//           visuals_description: item?.visuals_description?.trim() ?? "",
-//           audio_suggestion: item?.audio_suggestion?.trim() ?? "",
-//           on_screen_captions: item?.on_screen_captions?.trim() ?? "",
-//           platform_adaptations: item?.platform_adaptations?.trim() ?? "",
-//           cta_suggestions: item?.cta_suggestions?.trim() ?? "",
-//         }))
-//         .filter((item: GeneratedMotivation) => item.content.length > 0);
-//     }
-//   } catch (error) {
-//     console.error("Failed to parse AI motivations response:", cleaned);
-//   }
-//   return [];
-  // }
-  
-// static async generateMotivations(
-//   customizations?: MotivationGenerationOptions
-// ): Promise<GeneratedMotivation[]> {
-//   const { tone, type, themes, targetLength } = customizations || {};
-//   const resolvedTone = tone;
-//   const resolvedType = type;
-//   const resolvedThemes = themes && themes.join(", ");
-//   const resolvedLength = targetLength && targetLength > 0 ? targetLength : 300;
-
-//   const prompt = `
-// You are a world-class motivational writer and storytelling expert trained in viral short-form content psychology.
-// Your task is to generate **5 unique, emotionally charged motivational scripts** designed to go viral on TikTok, Instagram Reels, YouTube Shorts, and Facebook Reels.
-
-// Each script must:
-// 1. Be **100% voiceover-ready** — no visual, audio, or editing instructions.
-// 2. Be **formatted naturally for speech rhythm** — use strategic **line breaks**, **ellipses (...),** and **em dashes (—)** to create emotional pacing and pauses.
-// 3. Sound cinematic, confident, and emotionally resonant.
-
-// ---
-
-// **Structure and Flow (for each script):**
-// - **Hook (0–3s):** Begin with a powerful question, emotional contrast, or bold statement that grabs immediate attention.
-// - **Relatable Struggle (3–10s):** Describe a pain point or inner conflict most people feel.
-// - **Mindset Shift (10–25s):** Offer a realization, insight, or perspective change — something that reframes the struggle.
-// - **Credibility Anchor:** Optionally include one short quote from a recognizable figure (e.g., Jim Rohn, Tony Robbins, Les Brown, etc.) that reinforces the message.
-// - **Empowering Build (25–40s):** Amplify the emotional energy, use rhythmic phrasing, and encourage self-belief or action.
-// - **Emotional Echo Ending (40–60s):** End with a memorable, uplifting echo line — something that sounds like a powerful outro.
-// - **Call-to-Action (Final Line):** Say: “Like, Comment, and Follow for more — RulingYou.”
-
-// ---
-
-// **Tone & Style**
-// - Tone: ${resolvedTone}
-// - Type: ${resolvedType}
-// - Themes: ${resolvedThemes}
-// - Length: Roughly ${resolvedLength} words (±20%)
-// - Avoid clichés; write fresh, original, emotionally intelligent language.
-// - Use short sentences. Focus on rhythm and flow.
-// - Each sentence should feel like it could be the caption of a motivational post.
-
-// ---
-
-// **Caption Requirements:**
-// - Include **one concise, emotionally charged caption** (1 sentence max) that summarizes the core message.
-// - After the sentence, include **exactly 5 relevant hashtags** (focused on motivation, mindset, or self-growth).
-// - The hashtags should be natural, not overly generic.
-
-// ---
-
-// **Output Format (JSON only):**
-
-// {
-//   "motivations": [
-//     {
-//       "content": "<spoken script with natural rhythm and emotional pacing, no visual cues>",
-//       "caption": "<caption with 5 hashtags included>"
-//     }
-//   ]
-// }
-
-// Now generate the 5 viral-level motivational scripts.
-// `;
-
-//   const response = await openai.chat.completions.create({
-//     model: "gpt-4o-mini",
-//     messages: [{ role: "user", content: prompt }],
-//     temperature: 0.9,
-//   });
-
-//   const rawOutput = response.choices[0]?.message?.content || "";
-//   const cleaned = rawOutput
-//     .replace(/```json\s*/gi, "")
-//     .replace(/```\s*/g, "")
-//     .trim();
-
-//   try {
-//     const parsed = JSON.parse(cleaned);
-//     if (parsed && Array.isArray(parsed.motivations)) {
-//       return parsed.motivations
-//         .map((item: { content?: string; caption?: string }) => ({
-//           content: item?.content?.trim() ?? "",
-//           caption: item?.caption?.trim() ?? "",
-//         }))
-//         .filter((item: GeneratedMotivation) => item.content.length > 0);
-//     }
-//   } catch (error) {
-//     console.error("Failed to parse AI motivations response:", cleaned);
-//   }
-
-//   return [];
-// }
- 
-  
-//   static async generateMotivations(
-//   customizations?: MotivationGenerationOptions
-// ): Promise<GeneratedMotivation[]> {
-//   const { tone, type, themes, targetLength } = customizations || {};
-//   const resolvedTone = tone;
-//   const resolvedType = type;
-//   const resolvedThemes = themes && themes.join(", ");
-//   const resolvedLength = targetLength && targetLength > 0 ? targetLength : 300;
-
-//   const prompt = `
-// You are an expert viral motivational and inspirational writer for TikTok, Instagram Reels, YouTube Shorts, and Facebook Reels.
-// Generate **5 unique motivational voiceover scripts** that are fully viral-ready.
-
-// Requirements for each script:
-
-// 1. **Hook (0–3s)**:
-//    - Begin with a bold micro-hook or emotionally charged question.
-//    - Immediately capture attention with a pattern-interrupt or relatable struggle.
-
-// 2. **Relatable Struggle (3–10s)**:
-//    - Describe a common challenge or inner conflict with emotional language.
-//    - Keep sentences short and rhythmical for voiceover pacing.
-
-// 3. **Mindset Shift / Turning Point (10–25s)**:
-//    - Reframe the struggle into an opportunity.
-//    - Include **one credible quote** (e.g., Jim Rohn, Tony Robbins, Les Brown, Elon Musk, Steve Jobs, Bill Gates, Mark Zuckerberg, Jeff Bezos, Jensen Huang, Warren Buffett, Rockefeller, Albert Einstein, Nikola Tesla, Donald Trump, Richard Branson, Oprah Winfrey, Michelle Obama, Dwayne “The Rock” Johnson, Simon Sinek, Sheryl Sandberg, Maya Angelou, Rumi, Confucius, Lao Tzu, Mahatma Gandhi, Malcolm X, Martin Luther King Jr., Stephen Covey, Ray Dalio, Naval Ravikant, Peter Drucker, Benjamin Franklin, Thomas Edison, Henry Ford, J.K. Rowling, Charles Darwin, Socrates, Aristotle, Leonardo da Vinci, Coco Chanel, Steve Wozniak, Plato, Fred Smith, Howard Schultz, Mark Cuban, Tony Hsieh.) naturally.
-
-// 4. **Empowering Build / Climax (25–40s)**:
-//    - Use **punchy, rhythmic lines** for rewatchability (e.g., short commands or repeated phrases).
-//    - Encourage immediate action or self-belief.
-
-// 5. **Emotional Echo Ending (40–60s)**:
-//    - End with a memorable, uplifting line that reinforces empowerment.
-//    - Include **CTA echo** before the platform call-to-action.
-
-// 6. **Call-to-Action (Final Line)**:
-//    - Must always end with: “Like, Comment, and Follow for more — RulingYou.”
-
-// 7. **Voiceover Formatting**:
-//    - Use **ellipses (...)** and **line breaks** to create natural pauses.
-//    - Do **not** include music, visual, or stage directions.
-//    - Text should read naturally aloud.
-
-// 8. **Caption**:
-//    - One concise sentence summarizing the script’s core message.
-//    - Include **exactly 5 hashtags** — at least one trending (#Motivation2025).
-//    - Emotional, actionable, and discovery-focused.
-
-// 9. **Tone / Style / Themes**:
-//    - Tone: ${resolvedTone}
-//    - Type: ${resolvedType}
-//    - Themes: ${resolvedThemes}
-//    - Length: roughly ${resolvedLength} words (±20%)
-
-// ---
-
-// **Output strictly as JSON**:
-
-// {
-//   "motivations": [
-//     {
-//       "content": "<voiceover-ready script with natural pacing, micro-hooks, punchy climax lines, and emotional echo ending>",
-//       "caption": "<1-sentence summary with 5 hashtags>"
-//     }
-//   ]
-// }
-
-// Generate 5 scripts following these rules.
-// `;
-
-//   const response = await openai.chat.completions.create({
-//     model: "gpt-4o-mini",
-//     messages: [{ role: "user", content: prompt }],
-//     temperature: 0.9,
-//   });
-
-//   const rawOutput = response.choices[0]?.message?.content || "";
-//   const cleaned = rawOutput
-//     .replace(/```json\s*/gi, "")
-//     .replace(/```\s*/g, "")
-//     .trim();
-
-//   try {
-//     const parsed = JSON.parse(cleaned);
-//     if (parsed && Array.isArray(parsed.motivations)) {
-//       return parsed.motivations
-//         .map((item: { content?: string; caption?: string }) => ({
-//           content: item?.content?.trim() ?? "",
-//           caption: item?.caption?.trim() ?? "",
-//         }))
-//         .filter((item: GeneratedMotivation) => item.content.length > 0);
-//     }
-//   } catch (error) {
-//     console.error("Failed to parse AI motivations response:", cleaned);
-//   }
-
-//   return [];
-  // }
-  
-  
-
-
-
-
-  // Generate 10 viral story ideas
   static async generateViralIdeas(
     customizations: PromptCustomization
   ): Promise<string[]> {
@@ -1121,20 +708,6 @@ Return JSON strictly:
     }
   }
 
-  //Generate Outlines (legacy function for backward compatibility)
-  // static async generateOutline(
-  //   summaryContent: string,
-  //   totalChapters: number
-  // ): Promise<
-  //   {
-  //     number: number;
-  //     purpose: string;
-  //     description: string;
-  //   }[]
-  // > {
-  //   const result = await this.generateEnhancedOutline(summaryContent, totalChapters);
-  //   return result.outline;
-  // }
  
   //Generate Chapters with Summary
   static async generateChapter( 
@@ -1226,9 +799,9 @@ STORYTELLING REQUIREMENTS:
     }
 - Do NOT summarize; write full narrative text with multiple paragraphs.
 - CRITICAL: You MUST generate a concise 2-3 sentence summary of this chapter. This summary will be used for continuity in the next chapter generation.
-- VERY IMPORTANT: Always return the result in strict JSON format, exactly as specified below.
+- VERY IMPORTANT: Return ONLY valid JSON. Do NOT include any text before or after the JSON object. Do NOT include prefixes like "Chapter X:" or any other descriptive text. Start your response directly with the opening brace { and end with the closing brace }.
 
-Example JSON format to follow:
+Return ONLY this JSON structure:
 {
   "title": "Chapter title",
   "content": "Full chapter text",
@@ -1246,10 +819,35 @@ Example JSON format to follow:
     const content = response.choices[0]?.message?.content || "{}";
 
     // Clean markdown wrappers if present
-    const cleanedContent = content
+    let cleanedContent = content
       .replace(/```json\s*/gi, "")
       .replace(/```\s*/g, "")
       .trim();
+
+    // Extract JSON object even if there's text before it (e.g., "Chapter 3: Chapter 3 {...}")
+    // Find the first opening brace and extract the complete JSON object
+    const firstBraceIndex = cleanedContent.indexOf('{');
+    if (firstBraceIndex >= 0) {
+      // Find the matching closing brace by counting nested braces
+      let braceCount = 0;
+      let jsonEndIndex = firstBraceIndex;
+      
+      for (let i = firstBraceIndex; i < cleanedContent.length; i++) {
+        if (cleanedContent[i] === '{') {
+          braceCount++;
+        } else if (cleanedContent[i] === '}') {
+          braceCount--;
+          if (braceCount === 0) {
+            jsonEndIndex = i + 1;
+            break;
+          }
+        }
+      }
+      
+      if (braceCount === 0) {
+        cleanedContent = cleanedContent.substring(firstBraceIndex, jsonEndIndex);
+      }
+    }
 
     try {
       const parsed = JSON.parse(cleanedContent);
@@ -1554,6 +1152,8 @@ Generate the description following this exact structure.`;
       storedCharacterDetails?: Array<{
         name: string;
         age?: string;
+        skinTone?: string;
+        ethnicity?: string;
         attire?: string;
         facialFeatures?: string;
         physicalTraits?: string;
@@ -1576,6 +1176,8 @@ ${storyOutline.map(item => `Chapter ${item.number} (${item.purpose}): ${item.des
 ${storedCharacterDetails.map(char => {
   const details = [];
   if (char.age) details.push(`Age: ${char.age}`);
+  if (char.skinTone) details.push(`Skin Tone: ${char.skinTone}`);
+  if (char.ethnicity) details.push(`Ethnicity: ${char.ethnicity}`);
   if (char.attire) details.push(`Attire: ${char.attire}`);
   if (char.facialFeatures) details.push(`Facial Features: ${char.facialFeatures}`);
   if (char.physicalTraits) details.push(`Physical Traits: ${char.physicalTraits}`);
@@ -1614,10 +1216,13 @@ ${storedCharacterDetails.length > 0
 - If a character appears but has no stored details, create consistent details and include them in your prompts`
   : `- For each character that appears, specify consistent details:
   * Age (e.g., "a 25-year-old warrior", "an elderly king in his 60s")
+  * Skin tone (e.g., "dark brown", "light tan", "olive", "pale")
+  * Ethnicity (e.g., "African", "West African", "East African", "white", "european", "Asian", "Middle Eastern", etc.)
   * Attire (e.g., "wearing traditional royal robes", "dressed in battle armor")
   * Facial features (e.g., "with a strong jawline and piercing eyes", "a weathered face with deep wrinkles")
   * Physical traits (e.g., "tall and muscular", "petite with long braided hair", "distinctive scar on left cheek")
-- Use the same character descriptions across all image prompts for the same character`}
+- Use the same character descriptions across all image prompts for the same character
+- ALWAYS include skin tone and ethnicity to ensure visual consistency across chapters`}
 - Then add the action or scene description
 
 IMAGE PROMPT REQUIREMENTS:
@@ -1650,6 +1255,8 @@ ${chapterText}
     existingCharacterDetails: Array<{
       name: string;
       age?: string;
+      skinTone?: string;
+      ethnicity?: string;
       attire?: string;
       facialFeatures?: string;
       physicalTraits?: string;
@@ -1658,6 +1265,8 @@ ${chapterText}
   ): Promise<Array<{
     name: string;
     age?: string;
+    skinTone?: string;
+    ethnicity?: string;
     attire?: string;
     facialFeatures?: string;
     physicalTraits?: string;
@@ -1673,6 +1282,8 @@ ${chapterText}
 ${existingCharacterDetails.map(char => {
   const details = [];
   if (char.age) details.push(`Age: ${char.age}`);
+  if (char.skinTone) details.push(`Skin Tone: ${char.skinTone}`);
+  if (char.ethnicity) details.push(`Ethnicity: ${char.ethnicity}`);
   if (char.attire) details.push(`Attire: ${char.attire}`);
   if (char.facialFeatures) details.push(`Facial Features: ${char.facialFeatures}`);
   if (char.physicalTraits) details.push(`Physical Traits: ${char.physicalTraits}`);
@@ -1692,10 +1303,14 @@ ${existingDetailsText}
 
 For each character found in the prompts, extract and structure:
 - Age (if mentioned, e.g., "25-year-old", "elderly", "young")
+- Skin tone (if mentioned, e.g., "dark brown", "light tan", "olive", "pale", "deep brown", "caramel")
+- Ethnicity (if mentioned, e.g., "African", "West African", "East African","European", "white", "Asian", "Middle Eastern", "Latino", etc.)
 - Attire (clothing, accessories, e.g., "royal robes", "battle armor")
-- Facial features (e.g., "strong jawline", "piercing eyes", "weathered face")
+- Facial features (e.g., "strong jawline", "piercing eyes", "weathered face", "high cheekbones", "broad nose")
 - Physical traits (e.g., "tall and muscular", "petite", "distinctive scar")
 - Other defining details (any other visual characteristics)
+
+IMPORTANT: Always try to identify skin tone and ethnicity from context, character names, settings, or cultural references in the image prompts. If not explicitly mentioned, infer from contextual clues.
 
 Return ONLY valid JSON in this format:
 {
@@ -1703,6 +1318,8 @@ Return ONLY valid JSON in this format:
     {
       "name": "Character Name",
       "age": "age description if found",
+      "skinTone": "skin tone description if found",
+      "ethnicity": "ethnicity description if found",
       "attire": "attire description if found",
       "facialFeatures": "facial features if found",
       "physicalTraits": "physical traits if found",
@@ -1735,6 +1352,8 @@ ${promptsText}
         const merged: Array<{
           name: string;
           age?: string;
+          skinTone?: string;
+          ethnicity?: string;
           attire?: string;
           facialFeatures?: string;
           physicalTraits?: string;
@@ -1755,6 +1374,8 @@ ${promptsText}
           if (existingIndex >= 0) {
             // Update existing only if new details are provided
             if (newChar.age && !merged[existingIndex].age) merged[existingIndex].age = newChar.age;
+            if (newChar.skinTone && !merged[existingIndex].skinTone) merged[existingIndex].skinTone = newChar.skinTone;
+            if (newChar.ethnicity && !merged[existingIndex].ethnicity) merged[existingIndex].ethnicity = newChar.ethnicity;
             if (newChar.attire && !merged[existingIndex].attire) merged[existingIndex].attire = newChar.attire;
             if (newChar.facialFeatures && !merged[existingIndex].facialFeatures) merged[existingIndex].facialFeatures = newChar.facialFeatures;
             if (newChar.physicalTraits && !merged[existingIndex].physicalTraits) merged[existingIndex].physicalTraits = newChar.physicalTraits;
@@ -1764,6 +1385,8 @@ ${promptsText}
             merged.push({
               name: newChar.name,
               age: newChar.age,
+              skinTone: newChar.skinTone,
+              ethnicity: newChar.ethnicity,
               attire: newChar.attire,
               facialFeatures: newChar.facialFeatures,
               physicalTraits: newChar.physicalTraits,
@@ -2021,3 +1644,4 @@ Return ONLY valid JSON in this exact format:
   }
 
 }
+

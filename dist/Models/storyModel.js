@@ -80,6 +80,8 @@ const chapterImagePromptsSchema = new mongoose_1.Schema({
 const characterDetailsSchema = new mongoose_1.Schema({
     name: { type: String, required: true, trim: true },
     age: { type: String, trim: true },
+    skinTone: { type: String, trim: true },
+    ethnicity: { type: String, trim: true },
     attire: { type: String, trim: true },
     facialFeatures: { type: String, trim: true },
     physicalTraits: { type: String, trim: true },

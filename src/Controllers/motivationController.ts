@@ -154,7 +154,7 @@ export const generateMotivation = async (
           content: trimmedContent,
           caption: fallbackCaption,
         };
-      }
+      } 
     );
 
     const savedMotivations = await Motivation.insertMany(

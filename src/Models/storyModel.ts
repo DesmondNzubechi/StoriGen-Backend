@@ -144,6 +144,8 @@ interface IChapterImagePrompts {
 export interface ICharacterDetails {
   name: string;
   age?: string;
+  skinTone?: string;
+  ethnicity?: string;
   attire?: string;
   facialFeatures?: string;
   physicalTraits?: string;
@@ -165,6 +167,8 @@ const chapterImagePromptsSchema = new Schema<IChapterImagePrompts>({
 const characterDetailsSchema = new Schema<ICharacterDetails>({
   name: { type: String, required: true, trim: true },
   age: { type: String, trim: true },
+  skinTone: { type: String, trim: true },
+  ethnicity: { type: String, trim: true },
   attire: { type: String, trim: true },
   facialFeatures: { type: String, trim: true },
   physicalTraits: { type: String, trim: true },
