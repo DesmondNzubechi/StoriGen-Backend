@@ -467,7 +467,39 @@ const generateViralThumbnailPrompts = async (req, res, next) => {
                 message: "Story not found",
             });
         }
-        // Generate thumbnail prompt using story outline and metadata (not full story)
+        // Ensure character details exist - generate if missing
+        let characterDetails = story.characterDetails || [];
+        if (characterDetails.length === 0 && story.characters && story.characters.length > 0) {
+            characterDetails = await aiService_1.AIService.generateCharacterDetailsFromOutline(story.outline, {
+                title: story.storyTitle,
+                characters: story.characters || [],
+                settings: story.settings || [],
+                themes: story.themes || [],
+                tone: story.tone,
+                niche: story.niche,
+            }, story.summary);
+            // Save generated character details to story
+            if (characterDetails.length > 0) {
+                story.characterDetails = characterDetails.map(char => ({
+                    ...char,
+                    lastUpdatedChapter: 0,
+                    updateReason: 'Auto-generated from story outline'
+                }));
+                await story.save();
+            }
+        }
+        // Get stored character details for consistency
+        const storedCharacterDetails = characterDetails.map((char) => ({
+            name: char.name,
+            age: char.age,
+            skinTone: char.skinTone,
+            ethnicity: char.ethnicity,
+            attire: char.attire,
+            facialFeatures: char.facialFeatures,
+            physicalTraits: char.physicalTraits,
+            otherDetails: char.otherDetails,
+        }));
+        // Generate thumbnail prompt using story outline, metadata, and character details
         const videoTitle = ((_a = story.youtubeAssets.titles) === null || _a === void 0 ? void 0 : _a[0]) || story.storyTitle; // Use first title if available, otherwise story title
         const hadExistingThumbnail = Boolean(story.youtubeAssets.thumbnailPrompt && story.youtubeAssets.thumbnailPrompt.length > 0);
         const thumbnailPrompt = await aiService_1.AIService.generateThumbnailPrompt({
@@ -480,6 +512,7 @@ const generateViralThumbnailPrompts = async (req, res, next) => {
                 tone: story.tone,
             },
             videoTitle: videoTitle,
+            storedCharacterDetails: storedCharacterDetails,
         });
         // Update story
         story.youtubeAssets.thumbnailPrompt = thumbnailPrompt;
@@ -522,7 +555,39 @@ const generateViralShortsHooks = async (req, res, next) => {
                 message: "Story not found",
             });
         }
-        // Generate single shorts hook + image prompts using story outline and metadata (not full story)
+        // Ensure character details exist - generate if missing
+        let characterDetails = story.characterDetails || [];
+        if (characterDetails.length === 0 && story.characters && story.characters.length > 0) {
+            characterDetails = await aiService_1.AIService.generateCharacterDetailsFromOutline(story.outline, {
+                title: story.storyTitle,
+                characters: story.characters || [],
+                settings: story.settings || [],
+                themes: story.themes || [],
+                tone: story.tone,
+                niche: story.niche,
+            }, story.summary);
+            // Save generated character details to story
+            if (characterDetails.length > 0) {
+                story.characterDetails = characterDetails.map(char => ({
+                    ...char,
+                    lastUpdatedChapter: 0,
+                    updateReason: 'Auto-generated from story outline'
+                }));
+                await story.save();
+            }
+        }
+        // Get stored character details for consistency
+        const storedCharacterDetails = characterDetails.map((char) => ({
+            name: char.name,
+            age: char.age,
+            skinTone: char.skinTone,
+            ethnicity: char.ethnicity,
+            attire: char.attire,
+            facialFeatures: char.facialFeatures,
+            physicalTraits: char.physicalTraits,
+            otherDetails: char.otherDetails,
+        }));
+        // Generate single shorts hook + image prompts using story outline, metadata, and character details
         const hookResult = await aiService_1.AIService.generateShortsHooks({
             storyOutline: story.outline,
             storyMetadata: {
@@ -531,7 +596,9 @@ const generateViralShortsHooks = async (req, res, next) => {
                 settings: story.settings || [],
                 themes: story.themes || [],
                 tone: story.tone,
+                niche: story.niche,
             },
+            storedCharacterDetails: storedCharacterDetails,
         });
         if (!hookResult) {
             return res.status(500).json({
@@ -651,8 +718,29 @@ const generateChapterImagePrompts = async (req, res, next) => {
                 message: `Chapter ${chapterNumber} not found`,
             });
         }
+        // Ensure character details exist - generate if missing
+        let characterDetails = story.characterDetails || [];
+        if (characterDetails.length === 0 && story.characters && story.characters.length > 0) {
+            characterDetails = await aiService_1.AIService.generateCharacterDetailsFromOutline(story.outline, {
+                title: story.storyTitle,
+                characters: story.characters || [],
+                settings: story.settings || [],
+                themes: story.themes || [],
+                tone: story.tone,
+                niche: story.niche,
+            }, story.summary);
+            // Save generated character details to story
+            if (characterDetails.length > 0) {
+                story.characterDetails = characterDetails.map(char => ({
+                    ...char,
+                    lastUpdatedChapter: parseInt(chapterNumber),
+                    updateReason: 'Auto-generated from story outline'
+                }));
+                await story.save();
+            }
+        }
         // Get stored character details for consistency
-        const storedCharacterDetails = (story.characterDetails || []).map((char) => ({
+        const storedCharacterDetails = characterDetails.map((char) => ({
             name: char.name,
             age: char.age,
             skinTone: char.skinTone,

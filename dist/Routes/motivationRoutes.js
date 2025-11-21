@@ -104,7 +104,7 @@ router.post("/generate", authController_1.protectedRoute, motivationController_1
  *       504:
  *         description: Speech generation timed out
  */
-router.post("/:id/speech", authController_1.protectedRoute, motivationController_1.generateSpeechForMotivation);
+router.post("/:id/speech", authController_1.protectedRoute, (0, authMiddleware_1.restrictTo)("admin", "super-admin"), motivationController_1.generateSpeechForMotivation);
 /**
  * @swagger
  * /api/v1/motivation:

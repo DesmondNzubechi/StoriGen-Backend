@@ -9,6 +9,9 @@ import crypto from "crypto";
 import { AppResponse } from "../utils/appResponse";
 import { generatEmailVerificationCode } from "../utils/emailVerificationCode";
 import { protect as authenticateMiddleware, restrictTo as restrictMiddleware } from "../middleware/authMiddleware";
+import { Story } from "../Models/storyModel";
+import { Idea } from "../Models/Idea";
+import { Summary } from "../Models/Summary";
 
 config({ path: "./config.env" });
 
@@ -269,7 +272,7 @@ export const makeUserAdmin = catchAsync(async (req, res, next) => {
 
   const user = await User.findByIdAndUpdate(
     id,
-    { role: "super-admin" },
+    { role: "admin" },
     {
       new: true,
       runValidators: true,
@@ -586,4 +589,158 @@ export const unlinkGoogleAccount = catchAsync<AuthenticatedRequest>(async (req, 
       }
     }
   });
+});
+
+// ========== ADMIN CONTROLLERS ==========
+
+// Get all users (Admin only)
+export const getAllUsers = catchAsync<AuthenticatedRequest>(async (req, res, next) => {
+  const users = await User.find().select("-password -passwordResetToken -passwordResetTokenExpires -emailVerificationToken -emailVerificationExpires -emailVerificationCode -emailVerificationCodeExpires");
+
+  return AppResponse(
+    res,
+    200,
+    "success",
+    "Users fetched successfully",
+    { users, count: users.length }
+  );
+});
+
+// Add a new user (Admin only)
+export const addUser = catchAsync<AuthenticatedRequest>(async (req, res, next) => {
+  const { fullName, email, password, confirmPassword, role } = req.body;
+
+  if (!fullName || !email || !password || !confirmPassword) {
+    return next(new AppError("Kindly fill in all required fields", 400));
+  }
+
+  if (password !== confirmPassword) {
+    return next(new AppError("Password and confirm password must be the same", 400));
+  }
+
+  const userExist = await User.findOne({ email: email });
+
+  if (userExist) {
+    return next(
+      new AppError(
+        "User already exists with this email.",
+        700
+      )
+    );
+  }
+
+  const userRole = role && ["admin", "user", "super-admin"].includes(role) ? role : "user";
+
+  const user = await User.create({
+    fullName,
+    email,
+    password,
+    confirmPassword,
+    role: userRole,
+    emailVerified: true, // Admin-created users are auto-verified
+  });
+
+  const userResponse = {
+    _id: user._id,
+    fullName: user.fullName,
+    email: user.email,
+    role: user.role,
+    emailVerified: user.emailVerified,
+    createdAt: user.createdAt,
+  };
+
+  return AppResponse(
+    res,
+    201,
+    "success",
+    "User created successfully",
+    userResponse
+  );
+});
+
+// Get total number of stories created by a user (Admin only)
+export const getUserStoryCount = catchAsync<AuthenticatedRequest>(async (req, res, next) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return next(new AppError("Kindly provide the user id", 400));
+  }
+
+  const user = await User.findById(id);
+  if (!user) {
+    return next(new AppError("User not found", 404));
+  }
+
+  const storyCount = await Story.countDocuments({ user: id });
+
+  return AppResponse(
+    res,
+    200,
+    "success",
+    "Story count fetched successfully",
+    {
+      userId: id,
+      userEmail: user.email,
+      userFullName: user.fullName,
+      storyCount
+    }
+  );
+});
+
+// Get total number of ideas created by a user (Admin only)
+export const getUserIdeaCount = catchAsync<AuthenticatedRequest>(async (req, res, next) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return next(new AppError("Kindly provide the user id", 400));
+  }
+
+  const user = await User.findById(id);
+  if (!user) {
+    return next(new AppError("User not found", 404));
+  }
+
+  const ideaCount = await Idea.countDocuments({ user: id });
+
+  return AppResponse(
+    res,
+    200,
+    "success",
+    "Idea count fetched successfully",
+    {
+      userId: id,
+      userEmail: user.email,
+      userFullName: user.fullName,
+      ideaCount
+    }
+  );
+});
+
+// Get total number of summaries created by a user (Admin only)
+export const getUserSummaryCount = catchAsync<AuthenticatedRequest>(async (req, res, next) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return next(new AppError("Kindly provide the user id", 400));
+  }
+
+  const user = await User.findById(id);
+  if (!user) {
+    return next(new AppError("User not found", 404));
+  }
+
+  const summaryCount = await Summary.countDocuments({ user: id });
+
+  return AppResponse(
+    res,
+    200,
+    "success",
+    "Summary count fetched successfully",
+    {
+      userId: id,
+      userEmail: user.email,
+      userFullName: user.fullName,
+      summaryCount
+    }
+  );
 });

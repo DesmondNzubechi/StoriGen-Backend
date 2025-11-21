@@ -40,7 +40,7 @@ const userSchema = new Schema<IUser>(
       unique: true,
       validate: [validator.isEmail, "Kindly provide a valid email"],
     },
-    role: {
+    role: {  
       type: String,
       required: true,
       enum: ["admin", "user", "super-admin"],

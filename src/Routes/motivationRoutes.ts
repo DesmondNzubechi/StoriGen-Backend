@@ -112,7 +112,7 @@ router.post("/generate", protectedRoute, generateMotivation);
  *       504:
  *         description: Speech generation timed out
  */
-router.post("/:id/speech", protectedRoute, generateSpeechForMotivation);
+router.post("/:id/speech", protectedRoute, restrictTo("admin", "super-admin"), generateSpeechForMotivation);
 
 /**
  * @swagger

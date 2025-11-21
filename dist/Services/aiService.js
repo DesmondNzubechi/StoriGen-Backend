@@ -625,12 +625,41 @@ Return ONLY this JSON structure:
     // Generate creative thumbnail prompt
     static async generateThumbnailPrompt(options = {}) {
         var _a;
-        const { storyOutline = [], storyMetadata = {}, videoTitle } = options;
+        const { storyOutline = [], storyMetadata = {}, videoTitle, storedCharacterDetails = [] } = options;
         const { title, characters = [], settings = [], themes = [], tone } = storyMetadata;
         const outlineText = storyOutline.length > 0
             ? `📌 Story Outline:
 ${storyOutline.map(item => `Chapter ${item.number} (${item.purpose}): ${item.description}`).join('\n')}`
             : '';
+        // Format stored character details for the prompt
+        const characterDetailsText = storedCharacterDetails.length > 0
+            ? `\n📌 ESTABLISHED CHARACTER VISUAL DETAILS (MUST USE THESE EXACT DESCRIPTIONS IN THUMBNAIL):
+${storedCharacterDetails.map(char => {
+                const details = [];
+                if (char.name)
+                    details.push(`Name: ${char.name}`);
+                if (char.age)
+                    details.push(`Age: ${char.age}`);
+                if (char.skinTone)
+                    details.push(`Skin Tone: ${char.skinTone}`);
+                if (char.ethnicity)
+                    details.push(`Ethnicity: ${char.ethnicity}`);
+                if (char.attire)
+                    details.push(`Attire: ${char.attire}`);
+                if (char.facialFeatures)
+                    details.push(`Facial Features: ${char.facialFeatures}`);
+                if (char.physicalTraits)
+                    details.push(`Physical Traits: ${char.physicalTraits}`);
+                if (char.otherDetails)
+                    details.push(`Other: ${char.otherDetails}`);
+                return `- ${char.name}: ${details.join(', ')}`;
+            }).join('\n')}
+
+CRITICAL: You MUST use these exact character descriptions in the thumbnail prompt. Include the specific age, skin tone, ethnicity, attire, facial features, and physical traits for any characters shown in the thumbnail.`
+            : characters.length > 0
+                ? `\n📌 Main Characters: ${characters.join(', ')}
+NOTE: If characters appear in the thumbnail, describe them with specific details including age, skin tone, ethnicity, attire, facial features, and physical traits based on the story context.`
+                : '';
         const metadataText = `
 📌 Story Context:
 ${title ? `Title: ${title}` : ''}
@@ -638,7 +667,7 @@ ${videoTitle ? `Video Title: ${videoTitle}` : ''}
 ${characters.length > 0 ? `Main Characters: ${characters.join(', ')}` : ''}
 ${settings.length > 0 ? `Settings: ${settings.join(', ')}` : ''}
 ${themes.length > 0 ? `Themes: ${themes.join(', ')}` : ''}
-${tone ? `Tone: ${tone}` : ''}`;
+${tone ? `Tone: ${tone}` : ''}${characterDetailsText}`;
         const prompt = `
 IMPORTANT: Use simple, easy-to-understand English in all your responses. Avoid complex grammar and heavy language structures.
 
@@ -651,7 +680,29 @@ ${metadataText}
 ${outlineText}
 
 REQUIREMENTS:
-● The main focus should be one or two key characters, shown with strong emotional expressions (fear, anger, shock, sadness, pride), dressed in attire that fits the story's world and setting.
+● The main focus should be one or two key characters, shown with strong emotional expressions (fear, anger, shock, sadness, pride).
+${storedCharacterDetails.length > 0
+            ? `● CHARACTER APPEARANCE (CRITICAL): When describing characters in the thumbnail prompt, you MUST explicitly include ALL character details directly in the prompt text:
+    - Character name
+    - Age (exact as specified)
+    - Skin tone (exact as specified)
+    - Ethnicity (exact as specified)
+    - Attire (exact as specified)
+    - Facial features (exact as specified)
+    - Physical traits (exact as specified)
+    - Other details (if any)
+  Example: "[Character name], a [age] with [skin tone] skin tone, [ethnicity] ethnicity, wearing [attire], [facial features], [physical traits], showing [emotion] expression..."
+  Use the EXACT character details provided above. Do NOT create generic or different character descriptions. The thumbnail prompt MUST explicitly state all character details.`
+            : `● CHARACTER APPEARANCE: When characters appear in the thumbnail, explicitly include ALL their details directly in the prompt:
+    - Character name
+    - Age
+    - Skin tone
+    - Ethnicity
+    - Attire
+    - Facial features
+    - Physical traits
+  Character appearance should match the story's cultural context and setting.`}
+● Characters should be dressed in attire that fits the story's world and setting.
 ● Include one mysterious or supernatural visual element (such as glowing eyes, a shadowy figure, a symbolic creature, fire, storm clouds, a mask, etc.) to spark curiosity.
 ● Use a dramatic background that reflects the story's environment—palace-like settings, forests, villages, shrines, or any relevant location from the outline—designed with strong visual contrast.
 ● Choose a color palette that supports tension and drama, such as warm tones against deeper shadows.
@@ -659,7 +710,9 @@ REQUIREMENTS:
 ● The final concept should feel cinematic, suspenseful, highly click-worthy, and maintain an air of mystery.
 ● Adapt to the story's genre, tone, themes, and setting (not limited to any specific type or culture).
 
-Generate ONE detailed thumbnail prompt that could be used in an AI image generator (like MidJourney or Stable Diffusion).`;
+Generate ONE detailed thumbnail prompt that could be used in an AI image generator (like MidJourney or Stable Diffusion). 
+
+CRITICAL: The generated thumbnail prompt MUST explicitly include ALL character details (name, age, skin tone, ethnicity, attire, facial features, physical traits, other details) directly in the prompt text for any characters shown. Do NOT omit or assume any character details - they must all be explicitly stated in the generated prompt.`;
         const response = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [{ role: "user", content: prompt }],
@@ -875,27 +928,42 @@ ${outlineText}
 CHARACTER CONSISTENCY REQUIREMENTS:
 ${storedCharacterDetails.length > 0
             ? `- You have established character details above. USE THOSE EXACT DESCRIPTIONS for all characters mentioned.
+- CRITICAL: Each image prompt MUST explicitly include ALL character details directly in the prompt text when a character appears:
+  * Character name (if relevant)
+  * Age (exact as specified)
+  * Skin tone (exact as specified)
+  * Ethnicity (exact as specified)
+  * Attire (exact as specified)
+  * Facial features (exact as specified)
+  * Physical traits (exact as specified)
+  * Other details (if any)
+- Example: Instead of "A warrior fighting", write "A 25-year-old [character name], dark brown skin tone, West African ethnicity, wearing traditional warrior attire with battle armor, strong jawline and piercing eyes, tall and muscular build, fighting..."
 - Only modify character details if the story outline or plot explicitly requires it (e.g., time passage, plot-driven transformation, etc.)
-- If a character appears but has no stored details, create consistent details and include them in your prompts`
-            : `- For each character that appears, specify consistent details:
+- If a character appears but has no stored details, create consistent details and include ALL of them explicitly in your prompts`
+            : `- For each character that appears in an image prompt, you MUST explicitly include ALL of these details directly in the prompt text:
+  * Character name
   * Age (e.g., "a 25-year-old warrior", "an elderly king in his 60s")
   * Skin tone (e.g., "dark brown", "light tan", "olive", "pale")
   * Ethnicity (e.g., "African", "West African", "East African", "white", "european", "Asian", "Middle Eastern", etc.)
   * Attire (e.g., "wearing traditional royal robes", "dressed in battle armor")
   * Facial features (e.g., "with a strong jawline and piercing eyes", "a weathered face with deep wrinkles")
   * Physical traits (e.g., "tall and muscular", "petite with long braided hair", "distinctive scar on left cheek")
+- Example format: "[Character name], [age], [skin tone] skin, [ethnicity] ethnicity, [attire], [facial features], [physical traits], [action/scene]"
 - Use the same character descriptions across all image prompts for the same character
-- ALWAYS include skin tone and ethnicity to ensure visual consistency across chapters`}
+- ALWAYS include ALL character details (name, age, skin tone, ethnicity, attire, facial features, physical traits) in EVERY prompt where a character appears`}
 - Then add the action or scene description
 
 IMAGE PROMPT REQUIREMENTS:
 - Each prompt must vividly capture the main event, setting, or emotion of its paragraph
 - Each image prompt must be highly creative and visually striking
+- CRITICAL: When any character appears in a prompt, you MUST explicitly state ALL their details (name, age, skin tone, ethnicity, attire, facial features, physical traits, other details) directly in that prompt text - do not assume or omit any details
+- Example of complete character description in prompt: "A cinematic scene showing [Character Name], a 30-year-old warrior with deep brown skin tone, West African ethnicity, wearing traditional red and gold royal robes with intricate patterns, strong angular jawline with intense dark eyes, tall and powerfully built with broad shoulders, standing proudly in..."
 - Use cinematic, dramatic, and culturally accurate visuals based on the story's genre
   * If African storytelling: include palaces, villages, forests, rivers, warriors, kings, queens, rituals, masks, ancestral spirits, festivals, traditional clothing, and landscapes
   * If another genre: adapt cultural cues (e.g., sci-fi city, medieval castle, haunted mansion)
 - Style: hyper-realistic / cinematic / epic illustration
 - Each prompt should be standalone (do not mention "paragraph" or "chapter" in the wording)
+- Each prompt should be complete and self-contained with all character details explicitly stated
 - Provide exactly one image prompt per paragraph
 - Deliver results as a clean numbered list, matching the number of paragraphs in the chapter
 
@@ -907,6 +975,103 @@ ${chapterText}
             messages: [{ role: "user", content: prompt }],
         });
         return ((_a = response.choices[0].message) === null || _a === void 0 ? void 0 : _a.content) || "";
+    }
+    // Generate character details from story outline if they don't exist
+    static async generateCharacterDetailsFromOutline(storyOutline, storyMetadata, summary) {
+        var _a, _b;
+        const { title, characters = [], settings = [], themes = [], tone, niche } = storyMetadata;
+        if (characters.length === 0) {
+            return [];
+        }
+        const outlineText = storyOutline.length > 0
+            ? `📌 Story Outline:
+${storyOutline.map(item => `Chapter ${item.number} (${item.purpose}): ${item.description}`).join('\n')}`
+            : '';
+        const metadataText = `
+📌 Story Context:
+${title ? `Title: ${title}` : ''}
+${summary ? `Story Summary: ${summary}` : ''}
+${settings.length > 0 ? `Settings: ${settings.join(', ')}` : ''}
+${themes.length > 0 ? `Themes: ${themes.join(', ')}` : ''}
+${tone ? `Tone: ${tone}` : ''}
+${niche ? `Story Niche/Type: ${niche}` : ''}`;
+        const prompt = `
+IMPORTANT: Use simple, easy-to-understand English in all your responses. Avoid complex grammar and heavy language structures.
+
+You are analyzing a story to establish consistent visual character details for AI image generation.
+
+Based on the story outline and context, generate detailed visual descriptions for each main character.
+
+${metadataText}
+
+${outlineText}
+
+CHARACTERS TO ANALYZE: ${characters.join(', ')}
+
+For EACH character, you MUST generate:
+- **Name**: The character's name (exact as provided)
+- **Age**: Specific age or age range (e.g., "25-year-old", "elderly man in his 60s", "young woman in her 20s")
+- **Skin Tone**: Specific skin tone description (e.g., "dark brown", "light tan", "olive", "pale", "deep brown", "caramel", "fair")
+- **Ethnicity**: Ethnic or cultural background (e.g., "African", "West African", "East African", "European", "white", "Asian", "Middle Eastern", "Latino", etc.)
+- **Attire**: Typical clothing style based on the story setting and character role (e.g., "royal robes", "traditional warrior attire", "battle armor", "elegant dress")
+- **Facial Features**: Distinctive facial characteristics (e.g., "strong jawline and piercing eyes", "weathered face with deep wrinkles", "high cheekbones and sharp features", "kind eyes and warm smile")
+- **Physical Traits**: Body type, height, build, hair, or other notable physical features (e.g., "tall and muscular warrior", "petite with long braided hair", "distinctive scar on left cheek", "broad shoulders")
+- **Other Details**: Any other visual characteristics that would ensure consistency (e.g., "always wears a silver medallion", "has a limp from an old injury", "distinctive birthmark")
+
+CRITICAL REQUIREMENTS:
+1. Analyze the story outline, setting, themes, and tone to infer appropriate character details
+2. Be specific and detailed - vague descriptions won't work for consistent image generation
+3. Ensure details match the story's cultural context, time period, and setting
+4. Each character MUST have skin tone, ethnicity, age, and attire specified
+5. Use the story context to make informed decisions about character appearance
+
+Return ONLY valid JSON in this format:
+{
+  "characters": [
+    {
+      "name": "Character Name",
+      "age": "age description",
+      "skinTone": "skin tone description",
+      "ethnicity": "ethnicity description",
+      "attire": "attire description",
+      "facialFeatures": "facial features description",
+      "physicalTraits": "physical traits description",
+      "otherDetails": "other details if any"
+    }
+  ]
+}
+
+⚠️ Do NOT include markdown, backticks, or any text outside the JSON.`;
+        try {
+            const response = await openai.chat.completions.create({
+                model: "gpt-4o-mini",
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.5, // Moderate temperature for consistent but creative results
+            });
+            const content = ((_b = (_a = response.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) || "{}";
+            const cleaned = content
+                .replace(/```json\s*/gi, "")
+                .replace(/```\s*/g, "")
+                .trim();
+            const parsed = JSON.parse(cleaned);
+            if (parsed.characters && Array.isArray(parsed.characters)) {
+                return parsed.characters.map((char) => ({
+                    name: char.name,
+                    age: char.age,
+                    skinTone: char.skinTone,
+                    ethnicity: char.ethnicity,
+                    attire: char.attire,
+                    facialFeatures: char.facialFeatures,
+                    physicalTraits: char.physicalTraits,
+                    otherDetails: char.otherDetails,
+                }));
+            }
+            return [];
+        }
+        catch (error) {
+            console.error("Failed to generate character details from outline:", error);
+            return [];
+        }
     }
     // Extract character details from image prompts
     static async extractCharacterDetails(imagePrompts, characterNames, existingCharacterDetails = []) {
@@ -1040,12 +1205,41 @@ ${promptsText}
     //Generate Shorts hook + image prompts
     static async generateShortsHooks(options = {}) {
         var _a, _b;
-        const { storyOutline = [], storyMetadata = {} } = options;
+        const { storyOutline = [], storyMetadata = {}, storedCharacterDetails = [] } = options;
         const { title, characters = [], settings = [], themes = [], tone, niche } = storyMetadata;
         const outlineText = storyOutline.length > 0
             ? `📌 Story Outline:
 ${storyOutline.map(item => `Chapter ${item.number} (${item.purpose}): ${item.description}`).join('\n')}`
             : '';
+        // Format stored character details for the prompt
+        const characterDetailsText = storedCharacterDetails.length > 0
+            ? `\n📌 ESTABLISHED CHARACTER VISUAL DETAILS (MUST USE THESE EXACT DESCRIPTIONS IN IMAGE PROMPTS):
+${storedCharacterDetails.map(char => {
+                const details = [];
+                if (char.name)
+                    details.push(`Name: ${char.name}`);
+                if (char.age)
+                    details.push(`Age: ${char.age}`);
+                if (char.skinTone)
+                    details.push(`Skin Tone: ${char.skinTone}`);
+                if (char.ethnicity)
+                    details.push(`Ethnicity: ${char.ethnicity}`);
+                if (char.attire)
+                    details.push(`Attire: ${char.attire}`);
+                if (char.facialFeatures)
+                    details.push(`Facial Features: ${char.facialFeatures}`);
+                if (char.physicalTraits)
+                    details.push(`Physical Traits: ${char.physicalTraits}`);
+                if (char.otherDetails)
+                    details.push(`Other: ${char.otherDetails}`);
+                return `- ${char.name}: ${details.join(', ')}`;
+            }).join('\n')}
+
+CRITICAL: You MUST use these exact character descriptions in all image prompts. Include the specific age, skin tone, ethnicity, attire, facial features, and physical traits for any characters shown in the images.`
+            : characters.length > 0
+                ? `\n📌 Main Characters: ${characters.join(', ')}
+NOTE: If characters appear in the image prompts, describe them with specific details including age, skin tone, ethnicity, attire, facial features, and physical traits based on the story context.`
+                : '';
         const metadataText = `
 📌 Story Context:
 ${title ? `Title: ${title}` : ''}
@@ -1053,7 +1247,7 @@ ${characters.length > 0 ? `Main Characters: ${characters.join(', ')}` : ''}
 ${settings.length > 0 ? `Settings: ${settings.join(', ')}` : ''}
 ${themes.length > 0 ? `Themes: ${themes.join(', ')}` : ''}
 ${tone ? `Tone: ${tone}` : ''}
-${niche ? `Story Niche/Type: ${niche}` : ''}`;
+${niche ? `Story Niche/Type: ${niche}` : ''}${characterDetailsText}`;
         const prompt = `
 IMPORTANT: Use simple, easy-to-understand English in all your responses. Avoid complex grammar and heavy language structures.
 
@@ -1076,8 +1270,22 @@ IMAGE PROMPTS FOR THE INTRO:
 - After writing the intro, generate **one image prompt per paragraph** of the intro.
 - Each image prompt should:
   - Visually represent the key emotional and narrative beat of that paragraph.
-  - Include clear details about characters (age, attire, facial features, physical traits) and setting (location, time of day, atmosphere) that match the story's world.
+  - CRITICAL: When any character appears in a prompt, you MUST explicitly include ALL their details directly in that prompt text:
+    * Character name (if relevant)
+    * Age (exact as specified in character details)
+    * Skin tone (exact as specified)
+    * Ethnicity (exact as specified)
+    * Attire (exact as specified)
+    * Facial features (exact as specified)
+    * Physical traits (exact as specified)
+    * Other details (if any)
+  - Example format: "[Character name], [age], [skin tone] skin, [ethnicity] ethnicity, wearing [attire], [facial features], [physical traits], [action/scene]"
+  - ${storedCharacterDetails.length > 0
+            ? 'CRITICAL: Use the EXACT character details provided above for any characters shown. Each prompt MUST explicitly state ALL character details (name, age, skin tone, ethnicity, attire, facial features, physical traits, other details) directly in the prompt text - do not assume or omit any details.'
+            : 'For any characters that appear, explicitly include ALL specific details directly in the prompt: character name, age, skin tone, ethnicity, attire, facial features, and physical traits based on the story context.'}
+  - Include clear details about setting (location, time of day, atmosphere) that match the story's world.
   - Be highly creative, cinematic, and visually striking.
+  - Each prompt should be complete and self-contained with all character details explicitly stated.
 
 OUTPUT FORMAT (CRITICAL):
 Return ONLY valid JSON in this exact format:

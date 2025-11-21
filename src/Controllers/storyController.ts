@@ -526,7 +526,46 @@ export const generateViralThumbnailPrompts = async (req: AuthenticatedRequest, r
       });
     }
 
-    // Generate thumbnail prompt using story outline and metadata (not full story)
+    // Ensure character details exist - generate if missing
+    let characterDetails = story.characterDetails || [];
+    if (characterDetails.length === 0 && story.characters && story.characters.length > 0) {
+      characterDetails = await AIService.generateCharacterDetailsFromOutline(
+        story.outline,
+        {
+          title: story.storyTitle,
+          characters: story.characters || [],
+          settings: story.settings || [],
+          themes: story.themes || [],
+          tone: story.tone,
+          niche: story.niche,
+        },
+        story.summary
+      );
+      
+      // Save generated character details to story
+      if (characterDetails.length > 0) {
+        story.characterDetails = characterDetails.map(char => ({
+          ...char,
+          lastUpdatedChapter: 0,
+          updateReason: 'Auto-generated from story outline'
+        }));
+        await story.save();
+      }
+    }
+
+    // Get stored character details for consistency
+    const storedCharacterDetails = characterDetails.map((char: any) => ({
+      name: char.name,
+      age: char.age,
+      skinTone: char.skinTone,
+      ethnicity: char.ethnicity,
+      attire: char.attire,
+      facialFeatures: char.facialFeatures,
+      physicalTraits: char.physicalTraits,
+      otherDetails: char.otherDetails,
+    }));
+
+    // Generate thumbnail prompt using story outline, metadata, and character details
     const videoTitle = story.youtubeAssets.titles?.[0] || story.storyTitle; // Use first title if available, otherwise story title
     const hadExistingThumbnail = Boolean(story.youtubeAssets.thumbnailPrompt && story.youtubeAssets.thumbnailPrompt.length > 0);
     const thumbnailPrompt = await AIService.generateThumbnailPrompt({
@@ -539,6 +578,7 @@ export const generateViralThumbnailPrompts = async (req: AuthenticatedRequest, r
         tone: story.tone,
       },
       videoTitle: videoTitle,
+      storedCharacterDetails: storedCharacterDetails,
     });
 
     // Update story
@@ -585,7 +625,46 @@ export const generateViralShortsHooks = async (req: AuthenticatedRequest, res: R
       });
     }
 
-    // Generate single shorts hook + image prompts using story outline and metadata (not full story)
+    // Ensure character details exist - generate if missing
+    let characterDetails = story.characterDetails || [];
+    if (characterDetails.length === 0 && story.characters && story.characters.length > 0) {
+      characterDetails = await AIService.generateCharacterDetailsFromOutline(
+        story.outline,
+        {
+          title: story.storyTitle,
+          characters: story.characters || [],
+          settings: story.settings || [],
+          themes: story.themes || [],
+          tone: story.tone,
+          niche: story.niche,
+        },
+        story.summary
+      );
+      
+      // Save generated character details to story
+      if (characterDetails.length > 0) {
+        story.characterDetails = characterDetails.map(char => ({
+          ...char,
+          lastUpdatedChapter: 0,
+          updateReason: 'Auto-generated from story outline'
+        }));
+        await story.save();
+      }
+    }
+
+    // Get stored character details for consistency
+    const storedCharacterDetails = characterDetails.map((char: any) => ({
+      name: char.name,
+      age: char.age,
+      skinTone: char.skinTone,
+      ethnicity: char.ethnicity,
+      attire: char.attire,
+      facialFeatures: char.facialFeatures,
+      physicalTraits: char.physicalTraits,
+      otherDetails: char.otherDetails,
+    }));
+
+    // Generate single shorts hook + image prompts using story outline, metadata, and character details
     const hookResult = await AIService.generateShortsHooks({
       storyOutline: story.outline,
       storyMetadata: {
@@ -594,7 +673,9 @@ export const generateViralShortsHooks = async (req: AuthenticatedRequest, res: R
         settings: story.settings || [],
         themes: story.themes || [],
         tone: story.tone,
+        niche: story.niche,
       },
+      storedCharacterDetails: storedCharacterDetails,
     });
 
     if (!hookResult) {
@@ -727,8 +808,35 @@ export const generateChapterImagePrompts = async (req: AuthenticatedRequest, res
       });
     }
 
+    // Ensure character details exist - generate if missing
+    let characterDetails = story.characterDetails || [];
+    if (characterDetails.length === 0 && story.characters && story.characters.length > 0) {
+      characterDetails = await AIService.generateCharacterDetailsFromOutline(
+        story.outline,
+        {
+          title: story.storyTitle,
+          characters: story.characters || [],
+          settings: story.settings || [],
+          themes: story.themes || [],
+          tone: story.tone,
+          niche: story.niche,
+        },
+        story.summary
+      );
+      
+      // Save generated character details to story
+      if (characterDetails.length > 0) {
+        story.characterDetails = characterDetails.map(char => ({
+          ...char,
+          lastUpdatedChapter: parseInt(chapterNumber),
+          updateReason: 'Auto-generated from story outline'
+        }));
+        await story.save();
+      }
+    }
+
     // Get stored character details for consistency
-    const storedCharacterDetails = (story.characterDetails || []).map((char: any) => ({
+    const storedCharacterDetails = characterDetails.map((char: any) => ({
       name: char.name,
       age: char.age,
       skinTone: char.skinTone,

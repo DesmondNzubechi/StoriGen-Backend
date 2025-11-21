@@ -1,6 +1,8 @@
 import express, { Request, Response, NextFunction } from "express";
 import cors, { CorsOptions } from "cors";
 import cookieParser from "cookie-parser";
+import session from "express-session";
+import passport from "./config/passport";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger";
 import storyRoutes from "./Routes/storyRoutes";
@@ -18,6 +20,7 @@ const {
   ORIGIN_URL,
   CORS_ADDITIONAL_ORIGINS,
   NODE_ENV,
+  SESSION_SECRET,
 } = process.env;
 
 if (!ORIGIN_URL) {
@@ -77,6 +80,26 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
+
+// Configure express-session
+const isProduction = NODE_ENV === "production";
+app.use(
+  session({
+    secret: SESSION_SECRET || "your-session-secret-change-in-production",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: isProduction,
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: isProduction ? "none" : "lax",
+    },
+  })
+);
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Swagger UI setup
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {

@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.unlinkGoogleAccount = exports.linkGoogleAccount = exports.googleOAuthFailure = exports.googleOAuthSuccess = exports.logoutUser = exports.verifyUserEmail = exports.sendVerificationCode = exports.resetPassword = exports.forgottPassword = exports.makeUserAdmin = exports.changeUserPassword = exports.updateMe = exports.restrictedRoute = exports.protectedRoute = exports.fetchMe = exports.loginUser = exports.registerUser = exports.createAndSendTokenToUser = void 0;
+exports.getUserSummaryCount = exports.getUserIdeaCount = exports.getUserStoryCount = exports.addUser = exports.getAllUsers = exports.unlinkGoogleAccount = exports.linkGoogleAccount = exports.googleOAuthFailure = exports.googleOAuthSuccess = exports.logoutUser = exports.verifyUserEmail = exports.sendVerificationCode = exports.resetPassword = exports.forgottPassword = exports.makeUserAdmin = exports.changeUserPassword = exports.updateMe = exports.restrictedRoute = exports.protectedRoute = exports.fetchMe = exports.loginUser = exports.registerUser = exports.createAndSendTokenToUser = void 0;
 const userModel_1 = __importDefault(require("../Models/userModel"));
 const catchAsync_1 = __importDefault(require("../utils/catchAsync"));
 const appError_1 = require("../errors/appError");
@@ -14,6 +14,9 @@ const crypto_1 = __importDefault(require("crypto"));
 const appResponse_1 = require("../utils/appResponse");
 const emailVerificationCode_1 = require("../utils/emailVerificationCode");
 const authMiddleware_1 = require("../middleware/authMiddleware");
+const storyModel_1 = require("../Models/storyModel");
+const Idea_1 = require("../Models/Idea");
+const Summary_1 = require("../Models/Summary");
 (0, dotenv_1.config)({ path: "./config.env" });
 const { JWT_EXPIRES_IN, JWT_SECRET, JWT_COOKIE_EXPIRES, ORIGIN_URL, NODE_ENV, COOKIE_DOMAIN, } = process.env;
 if (!JWT_EXPIRES_IN || !JWT_SECRET || !JWT_COOKIE_EXPIRES || !ORIGIN_URL) {
@@ -172,7 +175,7 @@ exports.makeUserAdmin = (0, catchAsync_1.default)(async (req, res, next) => {
     if (!id) {
         return next(new appError_1.AppError("Kindly provide the user id", 400));
     }
-    const user = await userModel_1.default.findByIdAndUpdate(id, { role: "super-admin" }, {
+    const user = await userModel_1.default.findByIdAndUpdate(id, { role: "admin" }, {
         new: true,
         runValidators: true,
     });
@@ -373,5 +376,97 @@ exports.unlinkGoogleAccount = (0, catchAsync_1.default)(async (req, res, next) =
                 hasGoogleAccount: false
             }
         }
+    });
+});
+// ========== ADMIN CONTROLLERS ==========
+// Get all users (Admin only)
+exports.getAllUsers = (0, catchAsync_1.default)(async (req, res, next) => {
+    const users = await userModel_1.default.find().select("-password -passwordResetToken -passwordResetTokenExpires -emailVerificationToken -emailVerificationExpires -emailVerificationCode -emailVerificationCodeExpires");
+    return (0, appResponse_1.AppResponse)(res, 200, "success", "Users fetched successfully", { users, count: users.length });
+});
+// Add a new user (Admin only)
+exports.addUser = (0, catchAsync_1.default)(async (req, res, next) => {
+    const { fullName, email, password, confirmPassword, role } = req.body;
+    if (!fullName || !email || !password || !confirmPassword) {
+        return next(new appError_1.AppError("Kindly fill in all required fields", 400));
+    }
+    if (password !== confirmPassword) {
+        return next(new appError_1.AppError("Password and confirm password must be the same", 400));
+    }
+    const userExist = await userModel_1.default.findOne({ email: email });
+    if (userExist) {
+        return next(new appError_1.AppError("User already exists with this email.", 700));
+    }
+    const userRole = role && ["admin", "user", "super-admin"].includes(role) ? role : "user";
+    const user = await userModel_1.default.create({
+        fullName,
+        email,
+        password,
+        confirmPassword,
+        role: userRole,
+        emailVerified: true, // Admin-created users are auto-verified
+    });
+    const userResponse = {
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        emailVerified: user.emailVerified,
+        createdAt: user.createdAt,
+    };
+    return (0, appResponse_1.AppResponse)(res, 201, "success", "User created successfully", userResponse);
+});
+// Get total number of stories created by a user (Admin only)
+exports.getUserStoryCount = (0, catchAsync_1.default)(async (req, res, next) => {
+    const { id } = req.params;
+    if (!id) {
+        return next(new appError_1.AppError("Kindly provide the user id", 400));
+    }
+    const user = await userModel_1.default.findById(id);
+    if (!user) {
+        return next(new appError_1.AppError("User not found", 404));
+    }
+    const storyCount = await storyModel_1.Story.countDocuments({ user: id });
+    return (0, appResponse_1.AppResponse)(res, 200, "success", "Story count fetched successfully", {
+        userId: id,
+        userEmail: user.email,
+        userFullName: user.fullName,
+        storyCount
+    });
+});
+// Get total number of ideas created by a user (Admin only)
+exports.getUserIdeaCount = (0, catchAsync_1.default)(async (req, res, next) => {
+    const { id } = req.params;
+    if (!id) {
+        return next(new appError_1.AppError("Kindly provide the user id", 400));
+    }
+    const user = await userModel_1.default.findById(id);
+    if (!user) {
+        return next(new appError_1.AppError("User not found", 404));
+    }
+    const ideaCount = await Idea_1.Idea.countDocuments({ user: id });
+    return (0, appResponse_1.AppResponse)(res, 200, "success", "Idea count fetched successfully", {
+        userId: id,
+        userEmail: user.email,
+        userFullName: user.fullName,
+        ideaCount
+    });
+});
+// Get total number of summaries created by a user (Admin only)
+exports.getUserSummaryCount = (0, catchAsync_1.default)(async (req, res, next) => {
+    const { id } = req.params;
+    if (!id) {
+        return next(new appError_1.AppError("Kindly provide the user id", 400));
+    }
+    const user = await userModel_1.default.findById(id);
+    if (!user) {
+        return next(new appError_1.AppError("User not found", 404));
+    }
+    const summaryCount = await Summary_1.Summary.countDocuments({ user: id });
+    return (0, appResponse_1.AppResponse)(res, 200, "success", "Summary count fetched successfully", {
+        userId: id,
+        userEmail: user.email,
+        userFullName: user.fullName,
+        summaryCount
     });
 });

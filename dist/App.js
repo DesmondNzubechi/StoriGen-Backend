@@ -6,6 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
+const express_session_1 = __importDefault(require("express-session"));
+const passport_1 = __importDefault(require("./config/passport"));
 const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
 const swagger_1 = require("./config/swagger");
 const storyRoutes_1 = __importDefault(require("./Routes/storyRoutes"));
@@ -17,7 +19,7 @@ const motivationRoutes_1 = __importDefault(require("./Routes/motivationRoutes"))
 const errorController_1 = __importDefault(require("./errors/errorController"));
 const dotenv_1 = require("dotenv");
 (0, dotenv_1.config)({ path: "./config.env" });
-const { ORIGIN_URL, CORS_ADDITIONAL_ORIGINS, NODE_ENV, } = process.env;
+const { ORIGIN_URL, CORS_ADDITIONAL_ORIGINS, NODE_ENV, SESSION_SECRET, } = process.env;
 if (!ORIGIN_URL) {
     throw new Error("Make sure that the ORIGIN_URL environment variable is defined");
 }
@@ -65,6 +67,22 @@ app.use((req, res, next) => {
 });
 app.use(express_1.default.json({ limit: "1mb" }));
 app.use((0, cookie_parser_1.default)());
+// Configure express-session
+const isProduction = NODE_ENV === "production";
+app.use((0, express_session_1.default)({
+    secret: SESSION_SECRET || "your-session-secret-change-in-production",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: isProduction,
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        sameSite: isProduction ? "none" : "lax",
+    },
+}));
+// Initialize Passport
+app.use(passport_1.default.initialize());
+app.use(passport_1.default.session());
 // Swagger UI setup
 app.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swagger_1.swaggerSpec, {
     explorer: true,

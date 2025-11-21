@@ -565,4 +565,278 @@ router.post('/link-google', (0, validationMiddleware_1.validateRequestBody)([
  *               $ref: '#/components/schemas/Error'
  */
 router.post('/unlink-google', authController_1.protectedRoute, authController_1.unlinkGoogleAccount);
+// ========== ADMIN ROUTES ==========
+// All admin routes require authentication and admin/super-admin role
+/**
+ * @swagger
+ * /api/v1/auth/admin/users:
+ *   get:
+ *     summary: Get all users (Admin only)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Users fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 message:
+ *                   type: string
+ *                   example: "Users fetched successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     users:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/User'
+ *                     count:
+ *                       type: number
+ *       403:
+ *         description: Access forbidden - Admin access required
+ *       401:
+ *         description: Not authenticated
+ */
+router.route("/admin/users").get(authController_1.protectedRoute, (0, authController_1.restrictedRoute)("admin", "super-admin"), authController_1.getAllUsers);
+/**
+ * @swagger
+ * /api/v1/auth/admin/addUser:
+ *   post:
+ *     summary: Add a new user (Admin only)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - fullName
+ *               - email
+ *               - password
+ *               - confirmPassword
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *                 example: "John Doe"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "john@example.com"
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: "password123"
+ *               confirmPassword:
+ *                 type: string
+ *                 format: password
+ *                 example: "password123"
+ *               role:
+ *                 type: string
+ *                 enum: [user, admin, super-admin]
+ *                 default: user
+ *                 example: "user"
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ *       400:
+ *         description: Validation error or user already exists
+ *       403:
+ *         description: Access forbidden - Admin access required
+ *       401:
+ *         description: Not authenticated
+ */
+router.route("/admin/addUser").post(authController_1.protectedRoute, (0, authController_1.restrictedRoute)("admin", "super-admin"), (0, validationMiddleware_1.validateRequestBody)(validationMiddleware_1.registerValidationRules), authController_1.addUser);
+/**
+ * @swagger
+ * /api/v1/auth/admin/makeUserAdmin/{id}:
+ *   patch:
+ *     summary: Make a user admin (Admin only)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           description: User ID
+ *     responses:
+ *       200:
+ *         description: User granted admin role successfully
+ *       400:
+ *         description: Invalid user ID or error occurred
+ *       403:
+ *         description: Access forbidden - Admin access required
+ *       401:
+ *         description: Not authenticated
+ */
+router
+    .route("/admin/makeUserAdmin/:id")
+    .patch(authController_1.protectedRoute, (0, authController_1.restrictedRoute)("admin", "super-admin"), authController_1.makeUserAdmin);
+/**
+ * @swagger
+ * /api/v1/auth/admin/users/{id}/stories/count:
+ *   get:
+ *     summary: Get total number of stories created by a user (Admin only)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           description: User ID
+ *     responses:
+ *       200:
+ *         description: Story count fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 message:
+ *                   type: string
+ *                   example: "Story count fetched successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     userId:
+ *                       type: string
+ *                     userEmail:
+ *                       type: string
+ *                     userFullName:
+ *                       type: string
+ *                     storyCount:
+ *                       type: number
+ *       404:
+ *         description: User not found
+ *       403:
+ *         description: Access forbidden - Admin access required
+ *       401:
+ *         description: Not authenticated
+ */
+router
+    .route("/admin/users/:id/stories/count")
+    .get(authController_1.protectedRoute, (0, authController_1.restrictedRoute)("admin", "super-admin"), authController_1.getUserStoryCount);
+/**
+ * @swagger
+ * /api/v1/auth/admin/users/{id}/ideas/count:
+ *   get:
+ *     summary: Get total number of ideas created by a user (Admin only)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           description: User ID
+ *     responses:
+ *       200:
+ *         description: Idea count fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 message:
+ *                   type: string
+ *                   example: "Idea count fetched successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     userId:
+ *                       type: string
+ *                     userEmail:
+ *                       type: string
+ *                     userFullName:
+ *                       type: string
+ *                     ideaCount:
+ *                       type: number
+ *       404:
+ *         description: User not found
+ *       403:
+ *         description: Access forbidden - Admin access required
+ *       401:
+ *         description: Not authenticated
+ */
+router
+    .route("/admin/users/:id/ideas/count")
+    .get(authController_1.protectedRoute, (0, authController_1.restrictedRoute)("admin", "super-admin"), authController_1.getUserIdeaCount);
+/**
+ * @swagger
+ * /api/v1/auth/admin/users/{id}/summaries/count:
+ *   get:
+ *     summary: Get total number of summaries created by a user (Admin only)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           description: User ID
+ *     responses:
+ *       200:
+ *         description: Summary count fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 message:
+ *                   type: string
+ *                   example: "Summary count fetched successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     userId:
+ *                       type: string
+ *                     userEmail:
+ *                       type: string
+ *                     userFullName:
+ *                       type: string
+ *                     summaryCount:
+ *                       type: number
+ *       404:
+ *         description: User not found
+ *       403:
+ *         description: Access forbidden - Admin access required
+ *       401:
+ *         description: Not authenticated
+ */
+router
+    .route("/admin/users/:id/summaries/count")
+    .get(authController_1.protectedRoute, (0, authController_1.restrictedRoute)("admin", "super-admin"), authController_1.getUserSummaryCount);
 exports.default = router;
