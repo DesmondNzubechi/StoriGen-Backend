@@ -31,14 +31,13 @@ const app = express();
 
 app.set("trust proxy", 1);
   
-const defaultOrigins = [
-  ORIGIN_URL,
-  "http://localhost:3000",
-  "https://storigen.site",
-  "https://www.storigen.site",
-  "https://storigen.vercel.app",
-];
+// Parse multiple URLs from ORIGIN_URL (comma-separated)
+const defaultOrigins = (ORIGIN_URL || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter((origin) => origin.length > 0);
 
+// Parse additional origins if provided
 const extraOrigins = (CORS_ADDITIONAL_ORIGINS || "")
   .split(",")
   .map((origin) => origin.trim())

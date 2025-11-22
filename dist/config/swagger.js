@@ -5,6 +5,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.swaggerSpec = void 0;
 const swagger_jsdoc_1 = __importDefault(require("swagger-jsdoc"));
+const dotenv_1 = require("dotenv");
+(0, dotenv_1.config)({ path: './config.env' });
+// Parse ORIGIN_URL to get all allowed origins for Swagger servers
+const ORIGIN_URL = process.env.ORIGIN_URL || 'http://localhost:3000';
+const servers = ORIGIN_URL.split(',')
+    .map((url) => url.trim())
+    .filter((url) => url.length > 0)
+    .map((url, index) => ({
+    url,
+    description: index === 0 ? 'Primary server' : `Server ${index + 1}`
+}));
 const options = {
     definition: {
         openapi: '3.0.0',
@@ -17,12 +28,7 @@ const options = {
                 email: 'support@storigen.com'
             }
         },
-        servers: [
-            {
-                url: 'http://localhost:3000',
-                description: 'Development server'
-            }
-        ],
+        servers,
         components: {
             securitySchemes: {
                 bearerAuth: {

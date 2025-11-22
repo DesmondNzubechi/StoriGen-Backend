@@ -31,6 +31,9 @@ if (!JWT_EXPIRES_IN || !JWT_SECRET || !JWT_COOKIE_EXPIRES || !ORIGIN_URL) {
   );
 }
 
+// Get primary origin URL (first URL from comma-separated list)
+const PRIMARY_ORIGIN_URL = ORIGIN_URL.split(",")[0].trim();
+
 const isProduction = NODE_ENV === "production";
 const cookieExpiryDays = parseInt(JWT_COOKIE_EXPIRES, 10);
 
@@ -303,7 +306,7 @@ export const forgottPassword = catchAsync(async (req, res, next) => {
 
   await user.save({ validateBeforeSave: false });
 
-  const resetUrl = `${ORIGIN_URL}/auth/reset-password/${resetToken}`;
+  const resetUrl = `${PRIMARY_ORIGIN_URL}/auth/reset-password/${resetToken}`;
 
   const message = `forgot your password? kindly reset your password by clicking the link below. If you did not request for this kindly ignore. This is only valid for 30 minutes.`;
 
@@ -360,7 +363,7 @@ export const resetPassword = catchAsync(async (req, res, next) => {
     subject: "PASSWORD RESET SUCCESSFUL",
     email: user.email,
     name: user.fullName,
-    link: ORIGIN_URL,
+    link: PRIMARY_ORIGIN_URL,
     linkName: "Login",
   });
 
@@ -401,7 +404,7 @@ export const sendVerificationCode = catchAsync(async (req, res, next) => {
     subject: "VERIFY YOUR EMAIL",
     message: verificationMessage,
     vCode: verificationCode,
-    link: ORIGIN_URL,
+    link: PRIMARY_ORIGIN_URL,
     linkName: "Visit our website",
   });
 

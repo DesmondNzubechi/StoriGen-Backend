@@ -22,6 +22,8 @@ const { JWT_EXPIRES_IN, JWT_SECRET, JWT_COOKIE_EXPIRES, ORIGIN_URL, NODE_ENV, CO
 if (!JWT_EXPIRES_IN || !JWT_SECRET || !JWT_COOKIE_EXPIRES || !ORIGIN_URL) {
     throw new appError_1.AppError("Kindly make sure that these env variable are defined", 400);
 }
+// Get primary origin URL (first URL from comma-separated list)
+const PRIMARY_ORIGIN_URL = ORIGIN_URL.split(",")[0].trim();
 const isProduction = NODE_ENV === "production";
 const cookieExpiryDays = parseInt(JWT_COOKIE_EXPIRES, 10);
 if (Number.isNaN(cookieExpiryDays)) {
@@ -192,7 +194,7 @@ exports.forgottPassword = (0, catchAsync_1.default)(async (req, res, next) => {
     }
     const resetToken = user.createResetPasswordToken();
     await user.save({ validateBeforeSave: false });
-    const resetUrl = `${ORIGIN_URL}/auth/reset-password/${resetToken}`;
+    const resetUrl = `${PRIMARY_ORIGIN_URL}/auth/reset-password/${resetToken}`;
     const message = `forgot your password? kindly reset your password by clicking the link below. If you did not request for this kindly ignore. This is only valid for 30 minutes.`;
     try {
         (0, sendEmail_1.sendEmail)({
@@ -233,7 +235,7 @@ exports.resetPassword = (0, catchAsync_1.default)(async (req, res, next) => {
         subject: "PASSWORD RESET SUCCESSFUL",
         email: user.email,
         name: user.fullName,
-        link: ORIGIN_URL,
+        link: PRIMARY_ORIGIN_URL,
         linkName: "Login",
     });
     return (0, appResponse_1.AppResponse)(res, 200, "success", "You have successfully reset your password. Kindly Login again", null);
@@ -258,7 +260,7 @@ exports.sendVerificationCode = (0, catchAsync_1.default)(async (req, res, next) 
         subject: "VERIFY YOUR EMAIL",
         message: verificationMessage,
         vCode: verificationCode,
-        link: ORIGIN_URL,
+        link: PRIMARY_ORIGIN_URL,
         linkName: "Visit our website",
     });
     return (0, appResponse_1.AppResponse)(res, 200, "success", "Verification code sent successful. Kindly check your email", null);

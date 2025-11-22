@@ -1,5 +1,18 @@
 import swaggerJsdoc from 'swagger-jsdoc';
 import { Options } from 'swagger-jsdoc';
+import { config } from 'dotenv';
+
+config({ path: './config.env' });
+
+// Parse ORIGIN_URL to get all allowed origins for Swagger servers
+const ORIGIN_URL = process.env.ORIGIN_URL || 'http://localhost:3000';
+const servers = ORIGIN_URL.split(',')
+  .map((url) => url.trim())
+  .filter((url) => url.length > 0)
+  .map((url, index) => ({
+    url,
+    description: index === 0 ? 'Primary server' : `Server ${index + 1}`
+  }));
 
 const options: Options = {
   definition: {
@@ -13,12 +26,7 @@ const options: Options = {
         email: 'support@storigen.com'
       }
     },
-    servers: [
-      {
-        url: 'http://localhost:3000',
-        description: 'Development server'
-      }
-    ],
+    servers,
     components: {
       securitySchemes: {
         bearerAuth: {
