@@ -28,10 +28,8 @@ app.set("trust proxy", 1);
 const defaultOrigins = [
     ORIGIN_URL,
     "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:8080",
+    "https://storigen.site",
     "https://storigen.vercel.app",
-    "https://v0-ai-story-tool.vercel.app"
 ];
 const extraOrigins = (CORS_ADDITIONAL_ORIGINS || "")
     .split(",")
