@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import {
   validateRequestBody,
   registerValidationRules,
@@ -489,8 +489,8 @@ router.get('/google',
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/google/callback',
-  passport.authenticate('google', { failureRedirect: '/api/v1/auth/google/failure' }),
+router.get('/google/callback', 
+  passport.authenticate('google', { failureRedirect: false } as any),
   googleOAuthSuccess
 ); 
    

@@ -434,7 +434,7 @@ router.get('/google', passport_1.default.authenticate('google', { scope: ['profi
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/google/callback', passport_1.default.authenticate('google', { failureRedirect: '/api/v1/auth/google/failure' }), authController_1.googleOAuthSuccess);
+router.get('/google/callback', passport_1.default.authenticate('google', { failureRedirect: false }), authController_1.googleOAuthSuccess);
 /**
  * @swagger
  * /api/v1/auth/google/failure:
