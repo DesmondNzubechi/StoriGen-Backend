@@ -35,6 +35,7 @@ const defaultOrigins = [
   ORIGIN_URL,
   "http://localhost:3000",
   "https://storigen.site",
+  "https://www.storigen.site",
   "https://storigen.vercel.app",
 ];
 
@@ -62,15 +63,24 @@ app.use(cors(corsOptions));
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   const origin = req.headers.origin;
+  
+  // Handle OPTIONS preflight requests
+  if (req.method === "OPTIONS") {
+    if (origin && allowedOrigins.has(origin)) {
+      res.header("Access-Control-Allow-Origin", origin);
+      res.header("Access-Control-Allow-Credentials", "true");
+      res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+      res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, api_key");
+    }
+    return res.sendStatus(204);
+  }
+
+  // For non-OPTIONS requests, set CORS headers if origin is allowed
   if (origin && allowedOrigins.has(origin)) {
     res.header("Access-Control-Allow-Origin", origin);
-  }
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, api_key");
-
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204);
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, api_key");
   }
 
   next();
