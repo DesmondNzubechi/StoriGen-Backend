@@ -504,10 +504,26 @@ export const googleOAuthSuccess = catchAsync(async (req: Request, res: Response,
 
   const token = await signInToken(user._id);
   res.cookie("jwt", token, buildCookieOptions());
-
-  // Redirect to frontend with token in URL
-  const frontendRedirectUrl = ORIGIN_URL;
-  return res.redirect(frontendRedirectUrl);
+ 
+  // Return success response - frontend will handle redirection
+  res.status(200).json({
+    status: "success",
+    message: isNewUser ? "Google authentication successful. Account created." : "Google authentication successful",
+    data: {
+      user: {
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        emailVerified: user.emailVerified,
+        profilePicture: user.profilePicture,
+        hasGoogleAccount: !!user.googleId,
+        googleId: user.googleId
+      },
+      token,
+      isNewUser
+    }
+  });
 });
 
 //GOOGLE OAUTH FAILURE HANDLER

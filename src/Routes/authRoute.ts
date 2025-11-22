@@ -35,7 +35,7 @@ import {
 import passport from "../config/passport";
 import { createAndSendTokenToUser } from "../Controllers/authController";
 import { protect } from '../middleware/authMiddleware';
- 
+  
 const router = express.Router();
  
 /**{
@@ -493,7 +493,7 @@ router.get('/google/callback',
   passport.authenticate('google', { failureRedirect: '/api/v1/auth/google/failure' }),
   googleOAuthSuccess
 ); 
-  
+   
 /**
  * @swagger
  * /api/v1/auth/google/failure:
